@@ -24,8 +24,8 @@ async function set_routes (fastify: FastifyInstance, _options: Object) {
     return { pong: 'It worked!' }
   })
 
-  fastify.get('/hello-world', async(_request: FastifyRequest, reply: FastifyReply) => {
-    return reply.sendFile('hello-world.html')
+  fastify.get('/test-socket', async(_request: FastifyRequest, reply: FastifyReply) => {
+    return reply.sendFile('test-socket.html')
   })
 }
 
