@@ -37,3 +37,9 @@ le front envoie les inputs quand ils sont disponibles
 le back envoie les infos en 60 fps
 
 https://excalidraw.com/#json=VW6odnKOXzNvXVvvdje-D,wZBOWPiye1_8r4WbTMHtug
+
+
+# Install for dev
+
+Using last version of node(25.9.0) and npm(11.12.1).
+Using nvm to manage versions on 42 sessions.
