@@ -4,7 +4,7 @@ language typescript
 frontend svelte
 frontend mostly jrenault
 backend mostly hgeffroy
-backend node.js Express
+backend node.js Fastify
 socket io pour les sockets
 
 functionnal library like lodash or ramda (dig)
@@ -43,3 +43,4 @@ https://excalidraw.com/#json=VW6odnKOXzNvXVvvdje-D,wZBOWPiye1_8r4WbTMHtug
 
 Using last version of node(25.9.0) and npm(11.12.1).
 Using nvm to manage versions on 42 sessions.
+Run as dev : `npm run dev`
