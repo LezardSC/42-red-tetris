@@ -43,5 +43,9 @@
     "removeComments": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+
+    // Import options
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
   }
 }
