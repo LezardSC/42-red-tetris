@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest, RouteShorthandOptions } from "fastify";
 
 /**
  * Encapsulates the routes
@@ -6,7 +6,7 @@ import type { FastifyInstance } from "fastify";
  * @param {Object} options plugin options, refer to https://fastify.dev/docs/latest/Reference/Plugins/#plugin-options
  */
 
-const pingSchema = {
+const pingSchema: RouteShorthandOptions = {
   schema: {
     response: {
       200: {
@@ -19,15 +19,14 @@ const pingSchema = {
   }
 }
 
-async function set_routes (fastify: FastifyInstance, options: Object) {
-  fastify.get('/ping', pingSchema, async (_request, _reply) => {
+async function set_routes (fastify: FastifyInstance, _options: Object) {
+  fastify.get('/ping', pingSchema, async (_request: FastifyRequest, _reply: FastifyReply) => {
     return { pong: 'It worked!' }
   })
 
-  fastify.get('/hello-world', async(_request, _reply) => {
-    return _reply.sendFile('hello-world.html')
+  fastify.get('/hello-world', async(_request: FastifyRequest, reply: FastifyReply) => {
+    return reply.sendFile('hello-world.html')
   })
 }
 
-//ESM
 export default set_routes;
