@@ -1,0 +1,27 @@
+{
+  "name": "red-tetris",
+  "version": "1.0.0",
+  "description": "A tetris game running on JS and Svelte stacks",
+  "homepage": "https://github.com/LezardSC/42-red-tetris#readme",
+  "bugs": {
+    "url": "https://github.com/LezardSC/42-red-tetris/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LezardSC/42-red-tetris.git"
+  },
+  "license": "ISC",
+  "author": "Henri Geffroy and Jocelyn Renault",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/app.ts"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^6.0.3"
+  }
+}
