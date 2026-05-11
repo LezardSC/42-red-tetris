@@ -28,9 +28,6 @@ server.ready().then(() => {
   // we need to wait for the server to be ready, else `server.io` is undefined
   server.socketIO.on('connection', (socket) => {
     server.log.info(`Socket ${socket.id} connected.`);
-    socket.on('howdy', (_arg) => {
-      socket.emit('hello', 'world');
-    })
   });
 });
 
