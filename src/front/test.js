@@ -22,7 +22,6 @@ connectButton.addEventListener("click", () => {
     console.log(`Room name: ${arg.name}`);
     console.log(`Room host: ${arg.host}`);
     console.log(`Room players: ${arg.players}`);
-    console.log(`Game ongoing: ${arg.gameOngoing}`);
     console.log(`Max players: ${arg.maxPlayers}`);
   })
 

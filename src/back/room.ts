@@ -115,7 +115,6 @@ class RoomManager {
                 name: '',
                 host: '',
                 players: [],
-                gameOngoing: false,
                 maxPlayers: -1
             }
         }
@@ -128,7 +127,6 @@ class Room {
     name!: string;
     host!: string | undefined;
     players: Array<string> = [];
-    gameOngoing: boolean = false;
     maxPlayers: number = 4;
 
     public constructor(host: string, roomId: string) {
@@ -138,9 +136,6 @@ class Room {
     }
 
     public addPlayer(playerId: string) {
-        if (this.gameOngoing) {
-            throw new Error('Ongoing game in this room.');
-        }
         if (this.players.length < this.maxPlayers) {
             this.players.push(playerId);
         }
@@ -150,33 +145,24 @@ class Room {
     }
 
     public removePlayer(playerId: string) {
-        if (this.gameOngoing) {
-            throw new Error('Ongoing game in this room.');
-        }
-
         const index = this.players.findIndex(id => id === playerId);
 
         if (index !== -1) {
             this.players.splice(index, 1);
         }
+        else {
+            throw new Error(`Failed to remove player ${playerId} from room ${this.name} because it wasn't found.`)
+        }
+
         if (playerId === this.host) {
             if (this.players.length > 0) {
                 this.host = this.players[0];
             }
         }
-        else {
-            throw new Error(`Failed to remove player ${playerId} from room ${this.name} because it wasn't found.`)
-        }
     }
 
     public start(playerId: string) {
-        if (this.gameOngoing) {
-            throw new Error('Ongoing game in this room.');
-        }
-        if (playerId === this.host) {
-            this.gameOngoing = true;
-        }
-        else {
+        if (!(playerId === this.host)) {
             throw new Error(`Failed to start game in room ${this.name} because player ${playerId} is not the host. Host is ${this.host}.`)
         }
     }
@@ -186,7 +172,6 @@ class Room {
             name: this.name,
             host: this.host,
             players: this.players,
-            gameOngoing: this.gameOngoing,
             maxPlayers: this.maxPlayers
         }
     }
@@ -197,7 +182,6 @@ type RoomStatus = {
     name: string,
     host: string | undefined,
     players: Array<string>,
-    gameOngoing: boolean,
     maxPlayers: number
 }
 
