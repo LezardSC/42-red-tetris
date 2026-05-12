@@ -32,6 +32,10 @@ class HandlerFactory {
         if (!this.roomManager.checkAvailable(socket.id)) {
           return;
         }
+
+        if (this.gameManager.checkGameOngoing(roomId)) {
+          return;
+        }
     
         let joined = false;
     
