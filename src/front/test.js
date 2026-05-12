@@ -29,6 +29,10 @@ connectButton.addEventListener("click", () => {
   socket.on("gamestarted", () => {
     console.log("Game started");
   })
+
+  socket.on("gamestatus", (arg) => {
+    console.log(`time: ${arg.time}`);
+  })
 });
 
 disconnectButton.addEventListener("click", () => {

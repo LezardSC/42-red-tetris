@@ -7,7 +7,7 @@ import GameManager from '../back/game.ts';
 import HandlerFactory from './handlerfactory.ts';
 
 const server: FastifyInstance = Fastify({logger: true});
-const gameManager: GameManager = new GameManager();
+const gameManager: GameManager = new GameManager(server);
 const roomManager: RoomManager = new RoomManager(server);
 const handlerFactory: HandlerFactory = new HandlerFactory(server, roomManager, gameManager);
 
@@ -38,7 +38,7 @@ server.ready().then(() => {
     socket.on('start', handlerFactory.createStartHandler(socket));
     
     server.log.info(`Socket ${socket.id} connected.`);
-    socket.emit('handshake', '')
+    socket.emit('handshake')
   });
 });
 
