@@ -5,10 +5,10 @@ import type GameManager from '../back/game.ts';
 
 
 class HandlerFactory {
-    regex: RegExp = /^[a-zA-Z0-9_]+$/
-    server!: FastifyInstance
-    roomManager!: RoomManager
-    gameManager!: GameManager
+    regex: RegExp = /^[a-zA-Z0-9_]+$/;
+    server!: FastifyInstance;
+    roomManager!: RoomManager;
+    gameManager!: GameManager;
 
     public constructor(server: FastifyInstance, roomManager: RoomManager, gameManager: GameManager) {
         this.server = server;
@@ -16,13 +16,13 @@ class HandlerFactory {
         this.roomManager = roomManager;
     }
     
-    createDisconnectHandler(socket: Socket) {
+    public createDisconnectHandler(socket: Socket) {
         return (reason: string) => {
             this.server.log.info(`Socket ${socket.id} disconnected. Reason: ${reason}`);
         }
     }
     
-    createJoinHandler(socket: Socket) {
+    public createJoinHandler(socket: Socket) {
       return (roomId: any) => {
         if (typeof roomId !== "string" || !this.regex.test(roomId)) {
           this.server.log.info("Invalid room name.");
@@ -51,7 +51,7 @@ class HandlerFactory {
       };
     }
     
-    createLeaveHandler(socket: Socket) {
+    public createLeaveHandler(socket: Socket) {
         return (roomId: any) => {
             if (typeof roomId !== "string" || !this.regex.test(roomId)) {
             this.server.log.info('Invalid room name.')
@@ -66,7 +66,7 @@ class HandlerFactory {
         }
     }
     
-    createStartHandler(socket: Socket) {
+    public createStartHandler(socket: Socket) {
         return (roomId: any) => {
             if (typeof roomId !== "string" || !this.regex.test(roomId)) {
             this.server.log.info('Invalid room name.')
@@ -77,6 +77,7 @@ class HandlerFactory {
           if (started) {
             this.server.socketIO.to(roomId).emit('gamestarted');
           }
+          this.gameManager.startGame(roomId);
         }
     }
 
