@@ -87,6 +87,22 @@ class RoomManager {
         }
     }
 
+    public remove(playerId: string): string | null {
+        for (const [, room] of this.rooms) {
+            if (room.players.findIndex(id => id === playerId) > -1) {
+                room.removePlayer(playerId);
+
+                if (room.players.length === 0) {
+                    this.delete(room.name);
+                    return null;
+                } else {
+                    return room.name;
+                }
+            }
+        }
+        return null;
+    }
+
     public roomExists(roomId: string): boolean {
         const index = this.rooms.findIndex(([id]) => id === roomId);
 
