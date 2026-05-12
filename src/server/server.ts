@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import socketIO from './socketIO.ts';
 import RoomManager from '../back/room.ts';
 import GameManager from '../back/game.ts';
-import HandlerFactory from './subscribe.ts';
+import HandlerFactory from './handlerfactory.ts';
 
 const server: FastifyInstance = Fastify({logger: true});
 const gameManager: GameManager = new GameManager();
