@@ -19,6 +19,11 @@ class HandlerFactory {
     public createDisconnectHandler(socket: Socket) {
         return (reason: string) => {
             this.server.log.info(`Socket ${socket.id} disconnected. Reason: ${reason}`);
+            let roomId: string | null = this.roomManager.remove(socket.id);
+            if (roomId) {
+              this.server.socketIO.to(roomId).emit("roomstatus", this.roomManager.getRoomStatus(roomId))
+            }
+            // Need to update games ?
         }
     }
     
@@ -48,9 +53,7 @@ class HandlerFactory {
         if (joined) {
           socket.join(roomId);
     
-          this.server.socketIO
-            .to(roomId)
-            .emit("roomstatus", this.roomManager.getRoomStatus(roomId));
+          this.server.socketIO.to(roomId).emit("roomstatus", this.roomManager.getRoomStatus(roomId));
         }
       };
     }
@@ -77,11 +80,11 @@ class HandlerFactory {
             return;
           }
     
-          let started: boolean = this.roomManager.start(socket.id, roomId);
-          if (started) {
-            this.server.socketIO.to(roomId).emit('gamestarted');
+          let start: boolean = this.roomManager.start(socket.id, roomId);
+          if (start) {
+            this.server.socketIO.to(roomId).emit('gamestarting');
+            this.gameManager.startGame(roomId);
           }
-          this.gameManager.startGame(roomId);
         }
     }
 

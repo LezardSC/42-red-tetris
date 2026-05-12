@@ -25,8 +25,8 @@ connectButton.addEventListener("click", () => {
     console.log(`Max players: ${arg.maxPlayers}`);
   })
 
-  socket.on("gamestarted", () => {
-    console.log("Game started");
+  socket.on("gamestarting", () => {
+    console.log("Game starting");
   })
 
   socket.on("gamestatus", (arg) => {
