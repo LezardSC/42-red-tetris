@@ -38,11 +38,11 @@ disconnectButton.addEventListener("click", () => {
 });
 
 joinButton.addEventListener("click", () => {
-  socket.emit('join');
+  socket.emit('join', roomText.value);
 });
 
 leaveButton.addEventListener("click", () => {
-  socket.emit('leave');
+  socket.emit('leave', roomText.value);
 })
 
 startButton.addEventListener("click", () => {
