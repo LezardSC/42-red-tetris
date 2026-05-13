@@ -23,7 +23,7 @@ class HandlerFactory {
             if (roomId) {
               this.server.socketIO.to(roomId).emit("roomstatus", this.roomManager.getRoomStatus(roomId))
             }
-            // Need to update games ?
+            // Manage disconnection during game here
         }
     }
     
@@ -83,7 +83,10 @@ class HandlerFactory {
           let start: boolean = this.roomManager.start(socket.id, roomId);
           if (start) {
             this.server.socketIO.to(roomId).emit('gamestarting');
-            this.gameManager.startGame(roomId);
+            let players: Array<string> | null = this.roomManager.getRoomPlayers(roomId);
+            if (players) {
+              this.gameManager.startGame(roomId, players);
+            }
           }
         }
     }

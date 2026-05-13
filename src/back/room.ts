@@ -10,8 +10,8 @@ class RoomManager {
 
     // If roomid is undefined ...
     public create(host: string, roomId: string): boolean {
-        this.rooms.push([roomId, new Room(host, roomId)])
-        this.server.log.info(`Created room ${roomId} with host ${host}.`)
+        this.rooms.push([roomId, new Room(host, roomId)]);
+        this.server.log.info(`Created room ${roomId} with host ${host}.`);
         return true;
     }
 
@@ -20,11 +20,11 @@ class RoomManager {
 
         if (index !== -1) {
             this.rooms.splice(index, 1);
-            this.server.log.info(`Deleted room ${roomId}}.`)
+            this.server.log.info(`Deleted room ${roomId}}.`);
             return true;
         } 
         else {
-            this.server.log.info(`Failed to delete room ${roomId} because it wasn't found.`)
+            this.server.log.info(`Failed to delete room ${roomId} because it wasn't found.`);
             return false;
         }
     }
@@ -116,7 +116,7 @@ class RoomManager {
     public checkAvailable(playerId: string): boolean {
         const result = this.rooms.every(([, room]) => room.players.indexOf(playerId) === -1);
         if (!result) {
-            this.server.log.info(`Player ${playerId} is not available.`)
+            this.server.log.info(`Player ${playerId} is not available.`);
         }
         return result;
     }
@@ -125,7 +125,7 @@ class RoomManager {
         const roomTuple = this.rooms.find(([id]) => id === roomId);
 
         if (!roomTuple) {
-            this.server.log.info(`Room ${roomId} was not found`)
+            this.server.log.info(`Room ${roomId} was not found`);
 
             return {
                 name: '',
@@ -135,7 +135,17 @@ class RoomManager {
             }
         }
         return roomTuple[1].getStatus();
+    }
 
+    public getRoomPlayers(roomId: string): Array<string> | null {
+        const roomTuple = this.rooms.find(([id]) => id === roomId);
+
+        if (!roomTuple) {
+            this.server.log.info(`Room ${roomId} was not found`);
+            return null;
+        }
+
+        return roomTuple[1].players;
     }
 }
 

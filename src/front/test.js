@@ -4,6 +4,8 @@ const joinButton = document.getElementById("joinBtn");
 const leaveButton = document.getElementById("leaveBtn");
 const startButton = document.getElementById("startBtn");
 const roomText = document.getElementById("roomId");
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
 
 let socket = null;
 
@@ -31,6 +33,14 @@ connectButton.addEventListener("click", () => {
 
   socket.on("gamestatus", (arg) => {
     console.log(`time: ${arg.time}`);
+
+    let pieces = arg.players[0][1].pieces;
+    pieces.forEach(p => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = "rgb(200, 0, 0)";
+      ctx.fillRect(50 * p.x, 50 * p.y, 50, 50);
+    });
+    
   })
 });
 
