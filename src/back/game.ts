@@ -28,6 +28,28 @@ class GameManager {
         return result
     }
 
+    public keyPressed(playerId: string, key: string) {
+        for (let i: number = 0; i < this.games.length; i++) {
+            const gameTuple = this.games[i];
+            if (!gameTuple) {
+                return;
+            }
+
+            gameTuple[1].keyPressed(playerId, key);
+        }
+    }
+
+    public keyReleased(playerId: string, key: string) {
+        for (let i: number = 0; i < this.games.length; i++) {
+            const gameTuple = this.games[i];
+            if (!gameTuple) {
+                return;
+            }
+
+            gameTuple[1].keyReleased(playerId, key);
+        }
+    }
+
     private gameEnded(gameId: string) {
         try {
             const index = this.games.findIndex(([id]) => id === gameId);
@@ -66,7 +88,24 @@ class Game {
 
     public start() {
         this.startEmissionLoop();
-        this.startGameLoop();
+        this.startMainGameLoop();
+        this.startMoveGameLoop();
+    }
+
+    public keyPressed(playerId: string, key: string) {
+        const playerTuple = this.players.find(([id, ]) => id == playerId);
+        if (!playerTuple) {
+            return;
+        }
+        playerTuple[1].keyPressed(key);
+    }
+
+    public keyReleased(playerId: string, key: string) {
+        const playerTuple = this.players.find(([id, ]) => id == playerId);
+        if (!playerTuple) {
+            return;
+        }
+        playerTuple[1].keyReleased(key);
     }
     
     private async startEmissionLoop() {
@@ -78,20 +117,26 @@ class Game {
         this.gameStatusEmitter.emit('gameend');
     }
     
-    private async startGameLoop() {
+    private async startMainGameLoop() {
         while (this.time < 50) {
             // start chrono then update then sleep rest of time
             this.time++;
-            this.updateGame();
+            this.players.forEach(player => {
+                player[1].moveDown();
+            });
             await new Promise(resolve => setTimeout(resolve, 300));
         }
     }
 
-    private updateGame() {
-        this.players.forEach(player => {
-            player[1].move();
-        });
+    private async startMoveGameLoop() {
+        while (this.time < 50) {
+            this.players.forEach(player => {
+                player[1].move();
+            });
+            await new Promise(resolve => setTimeout(resolve, 75));
+        }
     }
+
 }
 
 type GameStatus = {

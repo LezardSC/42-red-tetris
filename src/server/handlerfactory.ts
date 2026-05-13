@@ -91,6 +91,18 @@ class HandlerFactory {
         }
     }
 
+    public createKeyPressedHandler(socket: Socket) {
+      return (key: any) => {
+        this.gameManager.keyPressed(socket.id, key);
+      }
+    }
+
+    public createKeyReleasedHandler(socket: Socket) {
+      return (key: any) => {
+        this.gameManager.keyReleased(socket.id, key);
+      }
+    }
+
 }
 
 export default HandlerFactory

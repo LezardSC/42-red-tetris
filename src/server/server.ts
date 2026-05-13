@@ -36,6 +36,8 @@ server.ready().then(() => {
     socket.on('join', handlerFactory.createJoinHandler(socket));
     socket.on('leave', handlerFactory.createLeaveHandler(socket));
     socket.on('start', handlerFactory.createStartHandler(socket));
+    socket.on('keydown', handlerFactory.createKeyPressedHandler(socket));
+    socket.on('keyup', handlerFactory.createKeyReleasedHandler(socket));
     
     server.log.info(`Socket ${socket.id} connected.`);
     socket.emit('handshake')

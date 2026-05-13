@@ -7,6 +7,8 @@ const roomText = document.getElementById("roomId");
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext("2d");
 
+
+/*------On socket opening-------*/
 let socket = null;
 
 connectButton.addEventListener("click", () => {
@@ -50,6 +52,8 @@ disconnectButton.addEventListener("click", () => {
   socket = null;
 });
 
+
+/*------Room tests-------*/
 joinButton.addEventListener("click", () => {
   socket.emit('join', roomText.value);
 });
@@ -60,4 +64,18 @@ leaveButton.addEventListener("click", () => {
 
 startButton.addEventListener("click", () => {
   socket.emit('start', roomText.value);
+})
+
+
+/*------Game management-------*/
+document.addEventListener("keydown", (event) => {
+  const keyname = event.key;
+
+  socket.emit('keydown', event.key);
+})
+
+document.addEventListener("keyup", (event) => {
+  const keyname = event.key;
+
+  socket.emit('keyup', event.key);
 })
