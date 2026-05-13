@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import type { FastifyInstance } from "fastify";
+import Player from "./player.ts";
 
 class GameManager {
     server!: FastifyInstance;
@@ -9,8 +10,8 @@ class GameManager {
         this.server = server;
     }
 
-    public startGame(gameId: string) {
-        let game: Game = new Game(gameId);
+    public startGame(gameId: string, playersId: Array<string>) {
+        let game: Game = new Game(gameId, playersId);
         game.gameStatusEmitter.on('status', (status) => this.sendGameStatus(gameId, status));
         game.gameStatusEmitter.on('gameend', () => this.gameEnded(gameId));
         this.games.push([gameId, game]);
@@ -54,25 +55,48 @@ class Game {
     gameId!: string;
     gameStatusEmitter: EventEmitter = new EventEmitter();
     time: number = 0;
+    players: Array<[string, Player]> = []
 
-    public constructor(gameId: string) {
+    public constructor(gameId: string, playersId: Array<string>) {
         this.gameId = gameId;
+        playersId.forEach(id => {
+            this.players.push([id, new Player(id, [10, 20])])
+        });
     }
 
-    public async start() {
-        while (this.time < 10) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            this.time++;
-            let status: GameStatus = {time: this.time};
+    public start() {
+        this.startEmissionLoop();
+        this.startGameLoop();
+    }
+    
+    private async startEmissionLoop() {
+        while (this.time < 50) {
+            let status: GameStatus = {time: this.time, players: this.players};
             this.gameStatusEmitter.emit('status', status);
+            await new Promise(resolve => setTimeout(resolve, 10));
         }
         this.gameStatusEmitter.emit('gameend');
+    }
+    
+    private async startGameLoop() {
+        while (this.time < 50) {
+            // start chrono then update then sleep rest of time
+            this.time++;
+            this.updateGame();
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+    }
 
+    private updateGame() {
+        this.players.forEach(player => {
+            player[1].move();
+        });
     }
 }
 
 type GameStatus = {
     time: number,
+    players: Array<[string, Player]>
 }
 
 export default GameManager
