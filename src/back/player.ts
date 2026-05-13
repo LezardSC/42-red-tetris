@@ -1,4 +1,4 @@
-import Piece from "./piece.ts";
+import { Piece, PieceType } from "./piece.ts";
 
 class Player {
     playerId!: string;
@@ -12,7 +12,7 @@ class Player {
     public constructor(playerId: string, boardSize: [number, number]) {
         this.playerId = playerId;
         this.boardSize = boardSize;
-        this.pieces.push(new Piece(0, 0));
+        this.pieces.push(new Piece(5, 1, PieceType.Z));
     }
 
     public moveDown() {
@@ -20,8 +20,8 @@ class Player {
         if (!lastPiece){
             return;
         }
-        if (lastPiece.y < this.boardSize[1] - 1) {
-            lastPiece.y++;
+        if (lastPiece.center.y < this.boardSize[1] - 1) {
+            lastPiece.center.y++;
         }
     }
 
@@ -75,14 +75,14 @@ class Player {
     }
 
     private moveRight(piece: Piece) {
-        if(piece.x < this.boardSize[0] - 1) {
-            piece.x++;
+        if(piece.center.x < this.boardSize[0] - 1) {
+            piece.center.x++;
         }
     }
 
     private moveLeft(piece: Piece) {
-        if(piece.x > 1) {
-            piece.x--;
+        if(piece.center.x > 1) {
+            piece.center.x--;
         }
     }
 }

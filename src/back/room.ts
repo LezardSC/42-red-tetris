@@ -8,7 +8,6 @@ class RoomManager {
         this.server = server;
     }
 
-    // If roomid is undefined ...
     public create(host: string, roomId: string): boolean {
         this.rooms.push([roomId, new Room(host, roomId)]);
         this.server.log.info(`Created room ${roomId} with host ${host}.`);
