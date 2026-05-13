@@ -59,8 +59,10 @@ class HandlerFactory {
     }
     
     public createLeaveHandler(socket: Socket) {
-        return (roomId: any) => {
-            if (typeof roomId !== "string" || !this.regex.test(roomId)) {
+        return () => {
+          let roomId: string | null = this.roomManager.getPlayerRoom(socket.id);
+
+          if (typeof roomId !== "string" || !this.regex.test(roomId)) {
             this.server.log.info('Invalid room name.')
             return;
           }
@@ -74,8 +76,10 @@ class HandlerFactory {
     }
     
     public createStartHandler(socket: Socket) {
-        return (roomId: any) => {
-            if (typeof roomId !== "string" || !this.regex.test(roomId)) {
+        return () => {
+          let roomId: string | null = this.roomManager.getPlayerRoom(socket.id);
+
+          if (typeof roomId !== "string" || !this.regex.test(roomId)) {
             this.server.log.info('Invalid room name.')
             return;
           }

@@ -147,6 +147,16 @@ class RoomManager {
 
         return roomTuple[1].players;
     }
+
+    public getPlayerRoom(playerId: string): string | null {
+        let result: string | null = null;
+        this.rooms.forEach(room => {
+            if (room[1].players.find(id => id === playerId)) {
+                result = room[0];
+            }
+        });
+        return result
+    }
 }
 
 class Room {
