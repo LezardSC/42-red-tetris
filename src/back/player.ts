@@ -17,7 +17,7 @@ class Player {
         for (let i: number = 0; i < this.board.length; i++) {
             this.board[i] = Color.Empty;
         }
-        this.piece = new Piece(4.5, 1.5, PieceType.O);
+        this.piece = new Piece(4.5, 1.5, PieceType.I);
     }
 
     public moveDown() {
@@ -32,7 +32,7 @@ class Player {
                     this.board[tileAbsolute.x + tileAbsolute.y * 10] = this.piece.color;
                 }
             }
-            this.piece = new Piece(4.5, 1.5, PieceType.O);
+            this.piece = new Piece(4.5, 1.5, PieceType.I);
         }
     }
 
@@ -43,6 +43,12 @@ class Player {
         }
         if (this.leftKey && !this.checkCollision(Direction.Left)) {
             this.moveLeft(this.piece);
+        }
+        if (this.upKey) {
+            //TODO: Need to check collisions here as well...
+            this.piece.tiles.forEach(tile => {
+                tile.rotate(-90);
+            });
         }
         
     }
