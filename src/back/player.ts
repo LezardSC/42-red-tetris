@@ -17,7 +17,7 @@ class Player {
         for (let i: number = 0; i < this.board.length; i++) {
             this.board[i] = Color.Empty;
         }
-        this.piece = new Piece(4.5, 1.5, PieceType.I);
+        this.piece = new Piece(4.5, 1.5, PieceType.S);
     }
 
     public moveDown() {
@@ -32,17 +32,17 @@ class Player {
                     this.board[tileAbsolute.x + tileAbsolute.y * 10] = this.piece.color;
                 }
             }
-            this.piece = new Piece(4.5, 1.5, PieceType.I);
+            this.piece = new Piece(4.5, 1.5, PieceType.S);
         }
     }
 
     public move() {
 
         if (this.rightKey && !this.checkCollision(Direction.Right)) {
-            this.moveRight(this.piece);
+            this.piece.center.x++;
         }
         if (this.leftKey && !this.checkCollision(Direction.Left)) {
-            this.moveLeft(this.piece);
+            this.piece.center.x--;
         }
         if (this.upKey) {
             //TODO: Need to check collisions here as well...
@@ -103,18 +103,6 @@ class Player {
         }
     }
 
-    private moveRight(piece: Piece) {
-        if(!this.checkCollision(Direction.Right)) {
-            piece.center.x++;
-        }
-    }
-
-    private moveLeft(piece: Piece) {
-        if(!this.checkCollision(Direction.Left)) {
-            piece.center.x--;
-        }
-    }
-
     private moveDownPieces(row: number) {
         for (let i: number = row * 10; i < row * 10 + 10; i++) {
             this.board[i] = Color.Empty;
@@ -147,6 +135,7 @@ class Player {
                     break;
             }
 
+            
             if (this.board[tileAbsolute.x + tileAbsolute.y * 10] != Color.Empty ||
                 tileAbsolute.x > this.boardSize[0] - 1 ||
                 tileAbsolute.x < 0 ||
