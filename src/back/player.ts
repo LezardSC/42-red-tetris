@@ -1,4 +1,3 @@
-import type { Direction } from "node:readline";
 import { Piece, PieceType, Coordinates, Color } from "./piece.ts";
 
 class Player {
