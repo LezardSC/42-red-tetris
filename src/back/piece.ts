@@ -145,7 +145,8 @@ const Color = {
     Z: [57, 137, 47],
     L: [254, 72, 25],
     J: [221, 10, 178],
-    T: [120, 37, 111]
+    T: [120, 37, 111],
+    Empty: [255, 255, 255],
 }
 
 export { PieceType, Color, Piece, Coordinates }

@@ -35,9 +35,20 @@ connectButton.addEventListener("click", () => {
 
   socket.on("gamestatus", (arg) => {
     console.log(`time: ${arg.time}`);
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    let board = arg.players[0][1].board;
+    console.log(`Board len: ${board.length}`);
+    for (let i = 0; i < board.length; i++) {
+      let tile = board[i];
+      ctx.fillStyle = `rgb(${tile[0]}, ${tile[1]}, ${tile[2]})`;
+      if (tile[0] != 255) {
+        console.log(`tile: x = ${50 * (i % 10)}; y = ${50 * Math.floor(i / 10)}`);
+      }
+      ctx.fillRect(50 * (i % 10), 50 * Math.floor(i / 10), 50, 50);
+    }
 
     let p = arg.players[0][1].piece;
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.fillStyle = `rgb(${p.color[0]}, ${p.color[1]}, ${p.color[2]})`
     p.tiles.forEach(
       t => {
@@ -45,11 +56,6 @@ connectButton.addEventListener("click", () => {
       }
     )
 
-    let board = arg.players[0][1].board;
-    board.forEach(tile => {
-      ctx.fillStyle = `rgb(${tile[1][0]}, ${tile[1][1]}, ${tile[1][2]})`;
-      ctx.fillRect(50 * tile[0].x, 50 * tile[0].y, 50, 50);
-    });
   })
 });
 
