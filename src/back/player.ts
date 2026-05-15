@@ -1,10 +1,10 @@
 import type { Direction } from "node:readline";
 import { Piece, PieceType, Coordinates } from "./piece.ts";
-import { server } from "../server/server.ts";
 
 class Player {
     playerId!: string;
-    pieces: Array<Piece> = [];
+    piece!: Piece;
+    board: Array<[Coordinates, Array<number>]> = [];
     boardSize!: [number, number];
     leftKey: boolean = false;
     rightKey: boolean = false;
@@ -14,39 +14,32 @@ class Player {
     public constructor(playerId: string, boardSize: [number, number]) {
         this.playerId = playerId;
         this.boardSize = boardSize;
-        this.pieces.push(new Piece(5, 1, PieceType.Z));
+        this.piece = new Piece(5, 1, PieceType.O);
     }
 
     public moveDown() {
-        const lastPiece = this.pieces.at(-1);
-        server.log.info(`Number of pieces: ${this.pieces.length}`);
-        this.pieces.forEach(p => {
-            p.tiles.forEach(t => {
-                server.log.info(`Tile coord: x = ${t.x} and y = ${t.y}`);
-            })
-        });
-        if (!lastPiece){
-            return;
-        }
-        if (lastPiece.center.y < this.boardSize[1] - 1 && !this.checkCollision(Direction.Down)) {
-            lastPiece.center.y++;
+        if (this.piece.center.y < this.boardSize[1] - 1 && !this.checkCollision(Direction.Down)) {
+            this.piece.center.y++;
         }
         else {
-            this.pieces.push(new Piece(5, 1, PieceType.Z));
+            for (let i: number = 0; i < this.piece.tiles.length; i++) {
+                let tile: Coordinates | undefined = this.piece.tiles[i];
+                if (tile) {
+                    let tileAbsolute = new Coordinates(tile.x + this.piece.center.x, tile.y + this.piece.center.y)
+                    this.board.push([tileAbsolute, this.piece.color]);
+                }
+            }
+            this.piece = new Piece(5, 1, PieceType.O);
         }
     }
 
     public move() {
-        const lastPiece = this.pieces.at(-1);
-        if (!lastPiece){
-            return;
-        }
 
         if (this.rightKey && !this.checkCollision(Direction.Right)) {
-            this.moveRight(lastPiece);
+            this.moveRight(this.piece);
         }
         if (this.leftKey && !this.checkCollision(Direction.Left)) {
-            this.moveLeft(lastPiece);
+            this.moveLeft(this.piece);
         }
         
     }
@@ -98,17 +91,12 @@ class Player {
     }
 
     private checkCollision(direction: string): boolean {
-        const lastPiece = this.pieces.at(-1);
-        if (!lastPiece){
-            return false;
-        }
-        
-        for (let i: number = 0; i < lastPiece.tiles.length; i++) {
-            let tileToTest = lastPiece.tiles[i];
+        for (let i: number = 0; i < this.piece.tiles.length; i++) {
+            let tileToTest = this.piece.tiles[i];
             if (!tileToTest) {
                 return false;
             }
-            let tileToTestAbsolute: Coordinates = new Coordinates(tileToTest.x + lastPiece.center.x, tileToTest.y + lastPiece.center.y);
+            let tileToTestAbsolute: Coordinates = new Coordinates(tileToTest.x + this.piece.center.x, tileToTest.y + this.piece.center.y);
             switch (direction) {
                 case Direction.Left:
                     tileToTestAbsolute.x -= 1;
@@ -120,21 +108,16 @@ class Player {
                     tileToTestAbsolute.y += 1;
                     break;
             }
-            for (let j: number = 0; j < this.pieces.length - 1; j++) {
-                let piece: Piece | undefined = this.pieces[j];
-                if (!piece) {
+
+            for (let k: number = 0; k < this.board.length; k++) {
+                let tile: [Coordinates, Array<number>] | undefined = this.board[k];
+                if (!tile) {
                     return false;
                 }
-                for (let k: number = 0; k < piece.tiles.length; k++) {
-                    let tile: Coordinates | undefined = piece.tiles[k];
-                    if (!tile) {
-                        return false;
-                    }
-                    let tileAbsolute: Coordinates = new Coordinates(tile.x + piece.center.x, tile.y + piece.center.y);
-                    
-                    if (tileToTestAbsolute.equals(tileAbsolute)) {
-                        return true;
-                    }
+                let tileAbsolute: Coordinates = new Coordinates(tile[0].x, tile[0].y);
+                
+                if (tileToTestAbsolute.equals(tileAbsolute)) {
+                    return true;
                 }
             }
         }

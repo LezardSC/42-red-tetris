@@ -2,11 +2,13 @@ class Piece {
     center!: Coordinates;
     type!: string;
     tiles: Array<Coordinates> = [];
+    color!: Array<number>;
 
     public constructor(x: number, y: number, type: string) {
         this.center = new Coordinates(x, y);
         this.type = type;
         this.setTiles(type);
+        this.setColor(type);
     }
 
     private setTiles(type: string) {
@@ -31,6 +33,32 @@ class Piece {
                 break;
             case PieceType.L:
                 this.setTileL();
+                break;
+        }
+    }
+
+    private setColor(type: string) {
+        switch(type) {
+            case PieceType.O:
+                this.color = Color.O;
+                break;
+            case PieceType.I:
+                this.color = Color.I;
+                break;
+            case PieceType.S:
+                this.color = Color.S;
+                break;
+            case PieceType.Z:
+                this.color = Color.Z;
+                break;
+            case PieceType.T:
+                this.color = Color.T;
+                break;
+            case PieceType.J:
+                this.color = Color.J;
+                break;
+            case PieceType.L:
+                this.color = Color.L;
                 break;
         }
     }
@@ -110,4 +138,14 @@ const PieceType = {
     T: "T"
 }
 
-export { PieceType, Piece, Coordinates }
+const Color = {
+    O: [254, 251, 52],
+    I: [1, 237, 250],
+    S: [234, 20, 28],
+    Z: [57, 137, 47],
+    L: [254, 72, 25],
+    J: [221, 10, 178],
+    T: [120, 37, 111]
+}
+
+export { PieceType, Color, Piece, Coordinates }

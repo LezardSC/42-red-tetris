@@ -36,17 +36,20 @@ connectButton.addEventListener("click", () => {
   socket.on("gamestatus", (arg) => {
     console.log(`time: ${arg.time}`);
 
-    let pieces = arg.players[0][1].pieces;
-    ctx.fillStyle = "rgb(200, 0, 0)";
+    let p = arg.players[0][1].piece;
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    pieces.forEach(p => {
-      p.tiles.forEach(
-        t => {
-          ctx.fillRect(50 * (t.x + p.center.x), 50 * (t.y + p.center.y), 50, 50);
-        }
-      )
+    ctx.fillStyle = `rgb(${p.color[0]}, ${p.color[1]}, ${p.color[2]})`
+    p.tiles.forEach(
+      t => {
+        ctx.fillRect(50 * (t.x + p.center.x), 50 * (t.y + p.center.y), 50, 50);
+      }
+    )
+
+    let board = arg.players[0][1].board;
+    board.forEach(tile => {
+      ctx.fillStyle = `rgb(${tile[1][0]}, ${tile[1][1]}, ${tile[1][2]})`;
+      ctx.fillRect(50 * tile[0].x, 50 * tile[0].y, 50, 50);
     });
-    
   })
 });
 
