@@ -48,9 +48,21 @@ class Player {
         
     }
 
-    // public checkCompletedRows(): number {
-        
-    // }
+    public checkCompletedRows(): number {
+        let deletedRows: number = 0;
+        for (let i: number = 0; i < this.boardSize[1]; i++) {
+            for (let j: number = 0; j < this.boardSize[0]; j++) {
+                if (this.board[i * 10 + j] === Color.Empty) {
+                    break;
+                }
+                if (j == this.boardSize[0] - 1) {
+                    deletedRows++;
+                    this.moveDownPieces(i);
+                }
+            }
+        }
+        return deletedRows;
+    }
 
     public keyPressed(key: string) {
         switch(key) {
@@ -98,11 +110,18 @@ class Player {
         }
     }
 
-    // private moveDownPieces(row: number) {
-    //     this.board.forEach(tile => {
-    //         if            
-    //     });
-    // }
+    private moveDownPieces(row: number) {
+        for (let i: number = row * 10; i < row * 10 + 10; i++) {
+            this.board[i] = Color.Empty;
+        }
+        for (let i: number = row * 10 - 1; i > 0; i--) {
+            let color = this.board[i]
+            if (color && color != Color.Empty) {
+                this.board[i + 10] = color;
+                this.board[i] = Color.Empty;
+            }
+        }
+    }
 
     private checkCollision(direction: string): boolean {
         for (let i: number = 0; i < this.piece.tiles.length; i++) {
