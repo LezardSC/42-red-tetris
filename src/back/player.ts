@@ -1,11 +1,11 @@
 import type { Direction } from "node:readline";
-import { Piece, PieceType, Coordinates } from "./piece.ts";
+import { Piece, PieceType, Coordinates, Color } from "./piece.ts";
 
 class Player {
     playerId!: string;
     piece!: Piece;
-    board: Array<[Coordinates, Array<number>]> = [];
     boardSize!: [number, number];
+    board!: Array<Array<number>>;
     leftKey: boolean = false;
     rightKey: boolean = false;
     upKey: boolean = false;
@@ -14,11 +14,15 @@ class Player {
     public constructor(playerId: string, boardSize: [number, number]) {
         this.playerId = playerId;
         this.boardSize = boardSize;
-        this.piece = new Piece(5, 1, PieceType.O);
+        this.board = new Array<Array<number>>(boardSize[0] * boardSize[1]);
+        for (let i: number = 0; i < this.board.length; i++) {
+            this.board[i] = Color.Empty;
+        }
+        this.piece = new Piece(4.5, 1.5, PieceType.O);
     }
 
     public moveDown() {
-        if (this.piece.center.y < this.boardSize[1] - 1 && !this.checkCollision(Direction.Down)) {
+        if (!this.checkCollision(Direction.Down)) {
             this.piece.center.y++;
         }
         else {
@@ -26,10 +30,10 @@ class Player {
                 let tile: Coordinates | undefined = this.piece.tiles[i];
                 if (tile) {
                     let tileAbsolute = new Coordinates(tile.x + this.piece.center.x, tile.y + this.piece.center.y)
-                    this.board.push([tileAbsolute, this.piece.color]);
+                    this.board[tileAbsolute.x + tileAbsolute.y * 10] = this.piece.color;
                 }
             }
-            this.piece = new Piece(5, 1, PieceType.O);
+            this.piece = new Piece(4.5, 1.5, PieceType.O);
         }
     }
 
@@ -43,6 +47,10 @@ class Player {
         }
         
     }
+
+    // public checkCompletedRows(): number {
+        
+    // }
 
     public keyPressed(key: string) {
         switch(key) {
@@ -79,16 +87,22 @@ class Player {
     }
 
     private moveRight(piece: Piece) {
-        if(piece.center.x < this.boardSize[0] - 1) {
+        if(!this.checkCollision(Direction.Right)) {
             piece.center.x++;
         }
     }
 
     private moveLeft(piece: Piece) {
-        if(piece.center.x > 1) {
+        if(!this.checkCollision(Direction.Left)) {
             piece.center.x--;
         }
     }
+
+    // private moveDownPieces(row: number) {
+    //     this.board.forEach(tile => {
+    //         if            
+    //     });
+    // }
 
     private checkCollision(direction: string): boolean {
         for (let i: number = 0; i < this.piece.tiles.length; i++) {
@@ -96,30 +110,26 @@ class Player {
             if (!tileToTest) {
                 return false;
             }
-            let tileToTestAbsolute: Coordinates = new Coordinates(tileToTest.x + this.piece.center.x, tileToTest.y + this.piece.center.y);
+            let tileAbsolute: Coordinates = new Coordinates(tileToTest.x + this.piece.center.x, tileToTest.y + this.piece.center.y);
             switch (direction) {
                 case Direction.Left:
-                    tileToTestAbsolute.x -= 1;
+                    tileAbsolute.x -= 1;
                     break;
                 case Direction.Right:
-                    tileToTestAbsolute.x += 1;
+                    tileAbsolute.x += 1;
                     break;
                 case Direction.Down:
-                    tileToTestAbsolute.y += 1;
+                    tileAbsolute.y += 1;
                     break;
             }
 
-            for (let k: number = 0; k < this.board.length; k++) {
-                let tile: [Coordinates, Array<number>] | undefined = this.board[k];
-                if (!tile) {
-                    return false;
-                }
-                let tileAbsolute: Coordinates = new Coordinates(tile[0].x, tile[0].y);
-                
-                if (tileToTestAbsolute.equals(tileAbsolute)) {
-                    return true;
-                }
+            if (this.board[tileAbsolute.x + tileAbsolute.y * 10] != Color.Empty ||
+                tileAbsolute.x > this.boardSize[0] - 1 ||
+                tileAbsolute.x < 0 ||
+                tileAbsolute.y > this.boardSize[1] - 1) {
+                return true;
             }
+
         }
 
         return false;
