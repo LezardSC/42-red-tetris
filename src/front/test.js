@@ -37,8 +37,8 @@ connectButton.addEventListener("click", () => {
     console.log(`time: ${arg.time}`);
 
     let pieces = arg.players[0][1].pieces;
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.fillStyle = "rgb(200, 0, 0)";
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     pieces.forEach(p => {
       p.tiles.forEach(
         t => {
