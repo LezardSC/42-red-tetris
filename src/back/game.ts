@@ -109,7 +109,7 @@ class Game {
     }
     
     private async startEmissionLoop() {
-        while (this.time < 50) {
+        while (true) {
             let status: GameStatus = {time: this.time, players: this.players};
             this.gameStatusEmitter.emit('status', status);
             await new Promise(resolve => setTimeout(resolve, 10));
@@ -118,11 +118,12 @@ class Game {
     }
     
     private async startMainGameLoop() {
-        while (this.time < 50) {
+        while (true) {
             //TODO: start chrono then update then sleep rest of time
             this.time++;
             this.players.forEach(player => {
                 player[1].moveDown();
+                player[1].checkCompletedRows();
             });
             await new Promise(resolve => setTimeout(resolve, 150));
         }
@@ -130,7 +131,7 @@ class Game {
 
     //TODO: Pourrait etre chez le player pour prendre en compte le keydown
     private async startMoveGameLoop() {
-        while (this.time < 50) {
+        while (true) {
             this.players.forEach(player => {
                 player[1].move();
             });
