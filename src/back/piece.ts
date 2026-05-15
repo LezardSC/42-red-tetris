@@ -94,6 +94,10 @@ class Coordinates {
         this.x = x;
         this.y = y;
     }
+
+    public equals(toTest: Coordinates): boolean {
+        return toTest.x == this.x && toTest.y == this.y;
+    }
 }
 
 const PieceType = {
@@ -106,4 +110,4 @@ const PieceType = {
     T: "T"
 }
 
-export { PieceType, Piece }
+export { PieceType, Piece, Coordinates }

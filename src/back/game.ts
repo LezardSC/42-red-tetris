@@ -119,15 +119,16 @@ class Game {
     
     private async startMainGameLoop() {
         while (this.time < 50) {
-            // start chrono then update then sleep rest of time
+            //TODO: start chrono then update then sleep rest of time
             this.time++;
             this.players.forEach(player => {
                 player[1].moveDown();
             });
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 150));
         }
     }
 
+    //TODO: Pourrait etre chez le player pour prendre en compte le keydown
     private async startMoveGameLoop() {
         while (this.time < 50) {
             this.players.forEach(player => {
