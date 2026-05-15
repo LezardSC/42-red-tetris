@@ -126,6 +126,14 @@ class Coordinates {
     public equals(toTest: Coordinates): boolean {
         return toTest.x == this.x && toTest.y == this.y;
     }
+
+    public rotate(angle: number) {
+        let angleRad: number = angle * Math.PI / 180; 
+        let newX: number = this.x * Math.cos(angleRad) + this.y * Math.sin(angleRad);
+        let newY: number = this.y * Math.cos(angleRad) - this.x * Math.sin(angleRad);
+        this.x = newX;
+        this.y = newY;
+    }
 }
 
 const PieceType = {
