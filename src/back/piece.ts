@@ -1,11 +1,36 @@
+class PieceManager {
+    nextPieces: Array<string> = []
+
+    public constructor() {
+        this.generateNewSet();
+    }
+
+    public generateNewSet(){
+        let unshuffled = Object.keys(PieceType);
+
+        let shuffled = unshuffled
+            .map(value => ({ value, sort: Math.random() }))
+            .sort((a, b) => a.sort - b.sort)
+            .map(({ value }) => value)
+
+        this.nextPieces = this.nextPieces.concat(shuffled);
+    }
+}
+
+
 class Piece {
     center!: Coordinates;
     type!: string;
     tiles: Array<Coordinates> = [];
     color!: Array<number>;
+    id!: number;
 
-    public constructor(x: number, y: number, type: string) {
+    public constructor(x: number, y: number, type: string | undefined, id: number) {
         // Adjust coordinates here
+        if (!type) {
+            throw new Error("Cannot create a piece with an undefined type.");
+        }
+
         if (type === PieceType.O || type === PieceType.I) {
             x += 0.5;
             y += 0.5;
@@ -14,6 +39,7 @@ class Piece {
         this.type = type;
         this.setTiles(type);
         this.setColor(type);
+        this.id = id;
     }
 
     private setTiles(type: string) {
@@ -162,4 +188,4 @@ const Color = {
     Empty: [255, 255, 255],
 }
 
-export { PieceType, Color, Piece, Coordinates }
+export { PieceType, Color, Piece, Coordinates, PieceManager }

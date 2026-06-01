@@ -1,4 +1,5 @@
-import { Piece, PieceType, Coordinates, Color } from "./piece.ts";
+import EventEmitter from "events";
+import { Piece, Coordinates, Color } from "./piece.ts";
 
 class Player {
     playerId!: string;
@@ -9,15 +10,17 @@ class Player {
     rightKey: boolean = false;
     upKey: boolean = false;
     downKey: boolean = false;
+    pieceDownEmitter: EventEmitter = new EventEmitter();
+    
 
-    public constructor(playerId: string, boardSize: [number, number]) {
+    public constructor(playerId: string, boardSize: [number, number], firstPiece: string | undefined) {
         this.playerId = playerId;
         this.boardSize = boardSize;
         this.board = new Array<Array<number>>(boardSize[0] * boardSize[1]);
         for (let i: number = 0; i < this.board.length; i++) {
             this.board[i] = Color.Empty;
         }
-        this.piece = new Piece(4, 1, PieceType.I);
+        this.piece = new Piece(4, 1, firstPiece, 0);
     }
 
     public moveDown() {
@@ -32,7 +35,7 @@ class Player {
                     this.board[tileAbsolute.x + tileAbsolute.y * 10] = this.piece.color;
                 }
             }
-            this.piece = new Piece(4, 1, PieceType.I);
+            this.pieceDownEmitter.emit('piecedown', this.piece.id);
         }
     }
 

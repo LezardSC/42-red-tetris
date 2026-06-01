@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import type { FastifyInstance } from "fastify";
 import Player from "./player.ts";
+import { Piece, PieceManager } from "./piece.ts";
 
 class GameManager {
     server!: FastifyInstance;
@@ -75,15 +76,22 @@ class GameManager {
 
 class Game {
     gameId!: string;
-    gameStatusEmitter: EventEmitter = new EventEmitter();
     time: number = 0;
     players: Array<[string, Player]> = []
+    pieceManager!: PieceManager;
+    gameStatusEmitter: EventEmitter = new EventEmitter();
 
     public constructor(gameId: string, playersId: Array<string>) {
         this.gameId = gameId;
+        this.pieceManager = new PieceManager();
         playersId.forEach(id => {
-            this.players.push([id, new Player(id, [10, 20])])
+            this.players.push([id, new Player(id, [10, 20], this.pieceManager.nextPieces[0])])
         });
+        this.players.forEach((player) => player[1].pieceDownEmitter.on('piecedown', (id) => {
+            if (id === this.pieceManager.nextPieces.length - 1)
+                this.pieceManager.generateNewSet();
+            player[1].piece = new Piece(4, 1, this.pieceManager.nextPieces[id + 1], id + 1)
+        }))
     }
 
     public start() {
