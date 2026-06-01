@@ -5,6 +5,11 @@ class Piece {
     color!: Array<number>;
 
     public constructor(x: number, y: number, type: string) {
+        // Adjust coordinates here
+        if (type === PieceType.O || type === PieceType.I) {
+            x += 0.5;
+            y += 0.5;
+        }
         this.center = new Coordinates(x, y);
         this.type = type;
         this.setTiles(type);

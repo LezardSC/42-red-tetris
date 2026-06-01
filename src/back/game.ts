@@ -87,9 +87,9 @@ class Game {
     }
 
     public start() {
-        this.startEmissionLoop();
-        this.startMainGameLoop();
-        this.startMoveGameLoop();
+        this.startEmissionLoop(10);
+        this.startMainGameLoop(150);
+        this.startMoveGameLoop(100);
     }
 
     public keyPressed(playerId: string, key: string) {
@@ -108,16 +108,16 @@ class Game {
         playerTuple[1].keyReleased(key);
     }
     
-    private async startEmissionLoop() {
+    private async startEmissionLoop(timer: number) {
         while (true) {
             let status: GameStatus = {time: this.time, players: this.players};
             this.gameStatusEmitter.emit('status', status);
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await new Promise(resolve => setTimeout(resolve, timer));
         }
         this.gameStatusEmitter.emit('gameend');
     }
     
-    private async startMainGameLoop() {
+    private async startMainGameLoop(timer: number) {
         while (true) {
             //TODO: start chrono then update then sleep rest of time
             this.time++;
@@ -125,17 +125,17 @@ class Game {
                 player[1].moveDown();
                 player[1].checkCompletedRows();
             });
-            await new Promise(resolve => setTimeout(resolve, 150));
+            await new Promise(resolve => setTimeout(resolve, timer));
         }
     }
 
     //TODO: Pourrait etre chez le player pour prendre en compte le keydown
-    private async startMoveGameLoop() {
+    private async startMoveGameLoop(timer: number) {
         while (true) {
             this.players.forEach(player => {
                 player[1].move();
             });
-            await new Promise(resolve => setTimeout(resolve, 75));
+            await new Promise(resolve => setTimeout(resolve, timer));
         }
     }
 
