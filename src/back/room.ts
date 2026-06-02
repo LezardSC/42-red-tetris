@@ -8,10 +8,9 @@ class RoomManager {
         this.server = server;
     }
 
-    // If roomid is undefined ...
     public create(host: string, roomId: string): boolean {
-        this.rooms.push([roomId, new Room(host, roomId)])
-        this.server.log.info(`Created room ${roomId} with host ${host}.`)
+        this.rooms.push([roomId, new Room(host, roomId)]);
+        this.server.log.info(`Created room ${roomId} with host ${host}.`);
         return true;
     }
 
@@ -20,11 +19,11 @@ class RoomManager {
 
         if (index !== -1) {
             this.rooms.splice(index, 1);
-            this.server.log.info(`Deleted room ${roomId}}.`)
+            this.server.log.info(`Deleted room ${roomId}}.`);
             return true;
         } 
         else {
-            this.server.log.info(`Failed to delete room ${roomId} because it wasn't found.`)
+            this.server.log.info(`Failed to delete room ${roomId} because it wasn't found.`);
             return false;
         }
     }
@@ -87,6 +86,22 @@ class RoomManager {
         }
     }
 
+    public remove(playerId: string): string | null {
+        for (const [, room] of this.rooms) {
+            if (room.players.findIndex(id => id === playerId) > -1) {
+                room.removePlayer(playerId);
+
+                if (room.players.length === 0) {
+                    this.delete(room.name);
+                    return null;
+                } else {
+                    return room.name;
+                }
+            }
+        }
+        return null;
+    }
+
     public roomExists(roomId: string): boolean {
         const index = this.rooms.findIndex(([id]) => id === roomId);
 
@@ -100,7 +115,7 @@ class RoomManager {
     public checkAvailable(playerId: string): boolean {
         const result = this.rooms.every(([, room]) => room.players.indexOf(playerId) === -1);
         if (!result) {
-            this.server.log.info(`Player ${playerId} is not available.`)
+            this.server.log.info(`Player ${playerId} is not available.`);
         }
         return result;
     }
@@ -109,18 +124,37 @@ class RoomManager {
         const roomTuple = this.rooms.find(([id]) => id === roomId);
 
         if (!roomTuple) {
-            this.server.log.info(`Room ${roomId} was not found`)
+            this.server.log.info(`Room ${roomId} was not found`);
 
             return {
                 name: '',
                 host: '',
                 players: [],
-                gameOngoing: false,
                 maxPlayers: -1
             }
         }
         return roomTuple[1].getStatus();
+    }
 
+    public getRoomPlayers(roomId: string): Array<string> | null {
+        const roomTuple = this.rooms.find(([id]) => id === roomId);
+
+        if (!roomTuple) {
+            this.server.log.info(`Room ${roomId} was not found`);
+            return null;
+        }
+
+        return roomTuple[1].players;
+    }
+
+    public getPlayerRoom(playerId: string): string | null {
+        let result: string | null = null;
+        this.rooms.forEach(room => {
+            if (room[1].players.find(id => id === playerId)) {
+                result = room[0];
+            }
+        });
+        return result
     }
 }
 
@@ -128,7 +162,6 @@ class Room {
     name!: string;
     host!: string | undefined;
     players: Array<string> = [];
-    gameOngoing: boolean = false;
     maxPlayers: number = 4;
 
     public constructor(host: string, roomId: string) {
@@ -138,9 +171,6 @@ class Room {
     }
 
     public addPlayer(playerId: string) {
-        if (this.gameOngoing) {
-            throw new Error('Ongoing game in this room.');
-        }
         if (this.players.length < this.maxPlayers) {
             this.players.push(playerId);
         }
@@ -150,33 +180,24 @@ class Room {
     }
 
     public removePlayer(playerId: string) {
-        if (this.gameOngoing) {
-            throw new Error('Ongoing game in this room.');
-        }
-
         const index = this.players.findIndex(id => id === playerId);
 
         if (index !== -1) {
             this.players.splice(index, 1);
         }
+        else {
+            throw new Error(`Failed to remove player ${playerId} from room ${this.name} because it wasn't found.`)
+        }
+
         if (playerId === this.host) {
             if (this.players.length > 0) {
                 this.host = this.players[0];
             }
         }
-        else {
-            throw new Error(`Failed to remove player ${playerId} from room ${this.name} because it wasn't found.`)
-        }
     }
 
     public start(playerId: string) {
-        if (this.gameOngoing) {
-            throw new Error('Ongoing game in this room.');
-        }
-        if (playerId === this.host) {
-            this.gameOngoing = true;
-        }
-        else {
+        if (!(playerId === this.host)) {
             throw new Error(`Failed to start game in room ${this.name} because player ${playerId} is not the host. Host is ${this.host}.`)
         }
     }
@@ -186,7 +207,6 @@ class Room {
             name: this.name,
             host: this.host,
             players: this.players,
-            gameOngoing: this.gameOngoing,
             maxPlayers: this.maxPlayers
         }
     }
@@ -197,7 +217,6 @@ type RoomStatus = {
     name: string,
     host: string | undefined,
     players: Array<string>,
-    gameOngoing: boolean,
     maxPlayers: number
 }
 
