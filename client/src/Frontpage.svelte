@@ -1,6 +1,8 @@
 <script lang="ts">
 import { router } from 'tinro';
 import './main.css';
+import TetrisBackground from './lib/TetrisBackground.svelte';
+import HeaderTetrisBackground from './lib/HeaderTetrisBackground.svelte';
 
 type Room = {
     name: string;
@@ -94,63 +96,71 @@ function joinRoom(targetRoom: string): void {
 }
 </script>
 
-<header>
-    <h1 class="">
-        Red Tetris
-    </h1>
-    <p class="">
-        Challenge your friends to a game of Tetris! Create or join a room and start playing together.
-    </p>
-</header>
+<div class="">
+    <header class="relative w-full max-w-5xl h-64 sm:h-80 rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden text-center mb-8 flex flex-col items-center justify-center z-10">
+        <HeaderTetrisBackground />
+        <div class="relative z-10 flex flex-col items-center">
+            <h1 class="text-gray-300">
+                Red Tetris
+            </h1>
+            <p class="text-gray-300">
+                Challenge your friends to a game of Tetris! Create or join a room and start playing together.
+            </p>
+        </div>
+    </header>
 
-<h2>Username</h2>
-{#if !username}
-<p>Enter your username to start playing:</p>
-<input type="text" bind:value={usernameInput} oninput={() => errors.username = ''} placeholder="Username" disabled={!!username}/>
-<button onclick={() => setUsername(usernameInput)}>Confirm</button>
-{#if errors.username}
-    <p style="color: red;">{errors.username}</p>
-{/if}
-{:else}
-    <p>Playing as <strong>{username}</strong></p>
-    <button onclick={() => username = ''}>Change Username</button>
-{/if}
+    <div class="fixed inset-0 z-0 pointer-events-none opacity-20">
+        <TetrisBackground />
+    </div>
+    <h2>Username</h2>
+    {#if !username}
+    <p>Enter your username to start playing:</p>
+    <input type="text" bind:value={usernameInput} oninput={() => errors.username = ''} placeholder="Username" disabled={!!username}/>
+    <button onclick={() => setUsername(usernameInput)}>Confirm</button>
+    {#if errors.username}
+        <p style="color: red;">{errors.username}</p>
+    {/if}
+    {:else}
+        <p>Playing as <strong>{username}</strong></p>
+        <button onclick={() => username = ''}>Change Username</button>
+    {/if}
 
-{#if !username}
-    <p>Choose a username before joining or creating a room.</p>
-{/if}
+    {#if !username}
+        <p>Choose a username before joining or creating a room.</p>
+    {/if}
 
-<h2>Available rooms:</h2>
+    <h2>Available rooms:</h2>
 
-{#if listRooms.length > 0}
-    <ul>
-        {#each listRooms as room}
-        <li>
-            {room.name} ({room.playerCount}/{room.maxPlayers})
-            <button
-                disabled={!username}
-                title={!username ? 'Please enter a username to join a room' : ''}
-                onclick={() => joinRoom(room.name)}
-            >
-                Join
-            </button>
-        </li>
-        {/each}
-    </ul>
-{:else}
-    <p>No available rooms.</p>
-{/if}
+    {#if listRooms.length > 0}
+        <ul>
+            {#each listRooms as room}
+            <li>
+                {room.name} ({room.playerCount}/{room.maxPlayers})
+                <button
+                    disabled={!username}
+                    title={!username ? 'Please enter a username to join a room' : ''}
+                    onclick={() => joinRoom(room.name)}
+                >
+                    Join
+                </button>
+            </li>
+            {/each}
+        </ul>
+    {:else}
+        <p>No available rooms.</p>
+    {/if}
 
-<h2>Create a new room:</h2>
+    <h2>Create a new room:</h2>
 
-<input type="text" bind:value={roomName} oninput={() => errors.createRoom = ''} placeholder="Room name" />
-<button
-    disabled={!username}
-    title={!username ? 'Please enter a username to create a room' : ''}
-    onclick={() => createRoom(roomName)}
-    >
-    Create Room
-</button>
-{#if errors.createRoom}
-    <p style="color: red;">{errors.createRoom}</p>
-{/if}
+    <input type="text" bind:value={roomName} oninput={() => errors.createRoom = ''} placeholder="Room name" />
+    <button
+        disabled={!username}
+        title={!username ? 'Please enter a username to create a room' : ''}
+        onclick={() => createRoom(roomName)}
+        >
+        Create Room
+    </button>
+    {#if errors.createRoom}
+        <p style="color: red;">{errors.createRoom}</p>
+    {/if}
+</div>
