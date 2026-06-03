@@ -1,5 +1,6 @@
 <script lang="ts">
 import { router } from 'tinro';
+import './main.css';
 
 type Room = {
     name: string;
@@ -10,8 +11,8 @@ type Room = {
 
 const mockRooms: Room[] = [
     { name: 'Room1', playerCount: 2, maxPlayers: 4, createdAt: Date.now() - 60000 },
-    { name: 'Room2', playerCount: 1, maxPlayers: 6, createdAt: Date.now() - 120000 },
-    { name: 'Room3', playerCount: 3, maxPlayers: 4, createdAt: Date.now() - 180000 },
+    { name: 'Hyper_zone', playerCount: 1, maxPlayers: 6, createdAt: Date.now() - 120000 },
+    { name: 'yomama', playerCount: 3, maxPlayers: 4, createdAt: Date.now() - 180000 },
     { name: 'Room4', playerCount: 2, maxPlayers: 2, createdAt: Date.now() - 240000 },
 ]
 
@@ -93,8 +94,14 @@ function joinRoom(targetRoom: string): void {
 }
 </script>
 
-
-<h1>Red Tetris</h1>
+<header>
+    <h1 class="">
+        Red Tetris
+    </h1>
+    <p class="">
+        Challenge your friends to a game of Tetris! Create or join a room and start playing together.
+    </p>
+</header>
 
 <h2>Username</h2>
 {#if !username}
