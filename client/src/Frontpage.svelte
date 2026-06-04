@@ -1,8 +1,7 @@
 <script lang="ts">
 import { router } from 'tinro';
-import './main.css';
 import TetrisBackground from './lib/TetrisBackground.svelte';
-import HeaderTetrisBackground from './lib/HeaderTetrisBackground.svelte';
+import HeaderTetrisBackground from './lib/TetrisHeader.svelte';
 
 type Room = {
     name: string;
@@ -96,18 +95,6 @@ function joinRoom(targetRoom: string): void {
 }
 </script>
 
-<div class="">
-    <header class="relative w-full max-w-5xl h-64 sm:h-80 rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden text-center mb-8 flex flex-col items-center justify-center z-10">
-        <HeaderTetrisBackground />
-        <div class="relative z-10 flex flex-col items-center">
-            <h1 class="text-gray-300">
-                Red Tetris
-            </h1>
-            <p class="text-gray-300">
-                Challenge your friends to a game of Tetris! Create or join a room and start playing together.
-            </p>
-        </div>
-    </header>
 
     <h2>Username</h2>
     {#if !username}
@@ -160,4 +147,3 @@ function joinRoom(targetRoom: string): void {
     {#if errors.createRoom}
         <p style="color: red;">{errors.createRoom}</p>
     {/if}
-</div>
