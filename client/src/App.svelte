@@ -3,7 +3,13 @@
 
   import Frontpage from './Frontpage.svelte';
   import Room from './Room.svelte';
+
+  import TetrisBackground from './lib/TetrisBackground.svelte';
 </script>
+
+<div class="fixed inset-0 pointer-events-none opacity-30">
+  <TetrisBackground />
+</div>
 
 <Route path="/"><Frontpage /></Route>
 <Route path="/:room/:username" let:meta>
