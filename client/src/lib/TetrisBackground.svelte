@@ -11,8 +11,8 @@
         let height = 0;
         let particles: Particle[] = [];
         let animationFrameId: number;
+        let lastTime = 0;
 
-        // Ajuster la taille du canvas à son conteneur
         const resize = () => {
             width = canvas.offsetWidth;
             height = canvas.offsetHeight;
@@ -22,49 +22,56 @@
 
         window.addEventListener('resize', resize);
         
-        // Formes classiques de Tetris
-        const shapes = [
-            [[1,1,1,1]], // I
-            [[1,0,0],[1,1,1]], // J
-            [[0,0,1],[1,1,1]], // L
-            [[1,1],[1,1]], // O
-            [[0,1,1],[1,1,0]], // S
-            [[0,1,0],[1,1,1]], // T
-            [[1,1,0],[0,1,1]]  // Z
-        ];
-
-        // Palette rouge/ambrée adaptée au thème sombre
-        const colors = [
-            'rgba(239, 68, 68, 0.25)',  // Red-500
-            'rgba(185, 28, 28, 0.3)',   // Red-700
-            'rgba(245, 158, 11, 0.15)', // Amber-500
-            'rgba(220, 38, 38, 0.2)'    // Red-600
+        // Association des 7 formes officielles à des couleurs néon
+        const tetrominos = [
+            { shape: [[1,1,1,1]], color: '#00FFFF' }, // I - Cyan
+            { shape: [[1,0,0],[1,1,1]], color: '#0066FF' }, // J - Bleu vif
+            { shape: [[0,0,1],[1,1,1]], color: '#FF8800' }, // L - Orange
+            { shape: [[1,1],[1,1]], color: '#FFE600' }, // O - Jaune
+            { shape: [[0,1,1],[1,1,0]], color: '#00FF00' }, // S - Vert
+            { shape: [[0,1,0],[1,1,1]], color: '#CC00FF' }, // T - Violet
+            { shape: [[1,1,0],[0,1,1]], color: '#FF0033' }  // Z - Rouge néon
         ];
 
         class Particle {
             x: number; y: number; size: number; speed: number;
             shape: number[][]; color: string;
             rotation: number; rotationSpeed: number;
+            maxClearance: number;
 
-            constructor() {
-                this.size = Math.random() * 12 + 10; // Taille de chaque bloc de la pièce
+            constructor(initialSpawn = false) {
+                this.size = Math.random() * 15 + 12; // Taille des blocs un peu plus grande
                 this.x = Math.random() * width;
-                this.y = Math.random() * height - height; // Commence plus haut
-                this.speed = Math.random() * 1.5 + 0.5;
-                this.shape = shapes[Math.floor(Math.random() * shapes.length)];
-                this.color = colors[Math.floor(Math.random() * colors.length)];
+                
+                const type = tetrominos[Math.floor(Math.random() * tetrominos.length)];
+                this.shape = type.shape;
+                this.color = type.color;
+                
+                this.speed = Math.random() * 0.1 + 0.05; // Vitesse de base (ajustée pour le delta time)
                 this.rotation = Math.random() * Math.PI * 2;
-                this.rotationSpeed = (Math.random() - 0.5) * 0.03;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.002;
+
+                // Calculer l'encombrement max de la pièce pour les sorties d'écran
+                this.maxClearance = Math.max(this.shape.length, this.shape[0].length) * this.size;
+
+                if (initialSpawn) {
+                    // Au démarrage, on répartit les pièces très haut au-dessus de l'écran
+                    this.y = -(Math.random() * height * 1.5) - this.maxClearance;
+                } else {
+                    // Quand une pièce meurt en bas, elle respawn juste au-dessus
+                    this.y = -this.maxClearance - (Math.random() * 100);
+                }
             }
 
-            update() {
-                this.y += this.speed;
-                this.rotation += this.rotationSpeed;
+            update(dt: number) {
+                // Utilisation du delta time pour une fluidité parfaite
+                this.y += this.speed * dt;
+                this.rotation += this.rotationSpeed * dt;
 
-                // Reset quand la pièce sort de l'écran en bas
-                if (this.y > height + this.size * 5) {
-                    this.y = -this.size * 5;
-                    this.x = Math.random() * width;
+                // Reset propre quand la pièce est totalement sortie en bas
+                if (this.y > height + this.maxClearance) {
+                    // On recrée une nouvelle pièce au-dessus
+                    Object.assign(this, new Particle(false));
                 }
             }
 
@@ -72,21 +79,37 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
-                
-                ctx.fillStyle = this.color;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-                ctx.lineWidth = 1;
 
                 const cols = this.shape[0].length;
                 const rows = this.shape.length;
+                
                 // Centrer le point de rotation
                 ctx.translate(-(cols * this.size) / 2, -(rows * this.size) / 2);
 
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
                         if (this.shape[r][c]) {
-                            ctx.fillRect(c * this.size, r * this.size, this.size, this.size);
-                            ctx.strokeRect(c * this.size, r * this.size, this.size, this.size);
+                            const blockX = c * this.size;
+                            const blockY = r * this.size;
+
+                            // 1. Lueur néon et fond
+                            ctx.fillStyle = this.color;
+                            ctx.globalAlpha = 0.6; // Légère transparence pour ne pas agresser l'œil
+                            ctx.shadowBlur = 10;
+                            ctx.shadowColor = this.color;
+                            ctx.fillRect(blockX, blockY, this.size, this.size);
+
+                            // 2. Démarcation forte (contour des carrés)
+                            ctx.globalAlpha = 1.0;
+                            ctx.shadowBlur = 0; // Désactiver l'ombre pour les lignes
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                            ctx.lineWidth = 1.5;
+                            ctx.strokeRect(blockX, blockY, this.size, this.size);
+
+                            // 3. Petit effet "biseau" arcade à l'intérieur
+                            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(blockX + 2, blockY + 2, this.size - 4, this.size - 4);
                         }
                     }
                 }
@@ -96,28 +119,40 @@
 
         function initParticles() {
             particles = [];
-            const count = Math.floor(window.innerWidth / 40); // Densité des pièces
+            // Densité ajustée pour ne pas surcharger visuellement
+            const count = Math.floor(window.innerWidth / 60); 
             for (let i = 0; i < count; i++) {
-                let p = new Particle();
-                p.y = Math.random() * height; // Éparpiller dès le début
-                particles.push(p);
+                particles.push(new Particle(true));
             }
         }
 
-        function draw() {
+        function draw(time: number) {
             if (!ctx) return;
 
+            // Calcul du Delta Time
+            if (!lastTime) lastTime = time;
+            const dt = time - lastTime;
+            lastTime = time;
+
+            // Plafond du dt pour éviter que les pièces sautent si l'onglet est inactif
+            const safeDt = Math.min(dt, 50);
+
             ctx.clearRect(0, 0, width, height);
+            
             particles.forEach(p => {
-                p.update();
+                p.update(safeDt);
                 p.draw(ctx);
             });
+            
             animationFrameId = requestAnimationFrame(draw);
         }
 
-        setTimeout(() => { resize(); initParticles(); draw(); }, 0);
+        setTimeout(() => { 
+            resize(); 
+            initParticles(); 
+            animationFrameId = requestAnimationFrame(draw); 
+        }, 0);
 
-        // Nettoyage lors de la destruction du composant
         return () => {
             window.removeEventListener('resize', resize);
             cancelAnimationFrame(animationFrameId);

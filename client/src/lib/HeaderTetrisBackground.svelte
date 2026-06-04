@@ -7,13 +7,13 @@
         if (!container) return;
 
         const tetrominos = [
-            { colors: ['rgb(59,84,165)', 'rgb(118,137,196)', 'rgb(79,111,182)'], data: [[0, 0, 0, 0], [0, 1, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]] },
-            { colors: ['rgb(214,30,60)', 'rgb(241,108,107)', 'rgb(236,42,75)'], data: [[0, 0, 0, 0], [0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0]] },
-            { colors: ['rgb(88,178,71)', 'rgb(150,204,110)', 'rgb(115,191,68)'], data: [[0, 0, 0, 0], [0, 1, 1, 0], [0, 0, 1, 1], [0, 0, 0, 0]] },
-            { colors: ['rgb(62,170,212)', 'rgb(120,205,244)', 'rgb(54,192,240)'], data: [[0, 0, 0, 0], [0, 1, 1, 1], [0, 0, 1, 0], [0, 0, 0, 0]] },
-            { colors: ['rgb(236,94,36)', 'rgb(234,154,84)', 'rgb(228,126,37)'], data: [[0, 0, 0, 0], [0, 1, 1, 0], [1, 1, 0, 0], [0, 0, 0, 0]] },
-            { colors: ['rgb(220,159,39)', 'rgb(246,197,100)', 'rgb(242,181,42)'], data: [[0, 0, 1, 0], [0, 0, 1, 0], [0, 1, 1, 0], [0, 0, 0, 0]] },
-            { colors: ['rgb(158,35,126)', 'rgb(193,111,173)', 'rgb(179,63,151)'], data: [[0, 1, 0, 0], [0, 1, 0, 0], [0, 1, 1, 0], [0, 0, 0, 0]] }
+            { color: '#00FFFF', data: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]] }, // I
+            { color: '#0066FF', data: [[0,0,0,0], [1,1,1,0], [0,0,1,0], [0,0,0,0]] }, // J
+            { color: '#FF8800', data: [[0,0,0,0], [1,1,1,0], [1,0,0,0], [0,0,0,0]] }, // L
+            { color: '#FFE600', data: [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]] }, // O
+            { color: '#00FF00', data: [[0,0,0,0], [0,1,1,0], [1,1,0,0], [0,0,0,0]] }, // S
+            { color: '#CC00FF', data: [[0,0,0,0], [1,1,1,0], [0,1,0,0], [0,0,0,0]] }, // T
+            { color: '#FF0033', data: [[0,0,0,0], [1,1,0,0], [0,1,1,0], [0,0,0,0]] }  // Z
         ];
 
         class Tetris {
@@ -53,51 +53,54 @@
             }
 
             init() {
-                this.curPiece = { data: null, colors: [0,0,0], x: 0, y: 0 };
+                this.curPiece = { data: null, color: '#000000', x: 0, y: 0 };
                 this.lastMove = Date.now();
-                this.curSpeed = 50 + Math.random() * 50;
+                this.curSpeed = 20 + Math.random() * 40; 
                 this.linesCleared = 0;
                 this.level = 0;
                 this.loseBlock = 0;
 
-                this.board = [];
                 this.boardWidth = Math.floor(this.width / this.unitSize);
                 this.boardHeight = Math.floor(this.height / this.unitSize);
+                this.board = [];
 
-                let halfHeight = this.boardHeight / 2;
-
+                // Plateau qui démarre 100% vide
                 for (let x = 0; x <= this.boardWidth; x++) {
                     this.board[x] = [];
                     for (let y = 0; y <= this.boardHeight; y++) {
-                        this.board[x][y] = { data: 0, colors: ['rgb(0,0,0)', 'rgb(0,0,0)', 'rgb(0,0,0)'] };
-                        if (Math.random() > 0.15 && y > halfHeight) {
-                            this.board[x][y] = {
-                                data: 1,
-                                colors: tetrominos[Math.floor(Math.random() * tetrominos.length)].colors
-                            };
-                        }
+                        this.board[x][y] = { data: 0, color: '#000000' };
                     }
                 }
 
-                for (let x = 0; x <= this.boardWidth; x++) {
-                    for (let y = this.boardHeight - 1; y > -1; y--) {
-                        if (this.board[x][y].data === 0 && y > 0) {
-                            for (let yy = y; yy > 0; yy--) {
-                                if (this.board[x][yy - 1].data) {
-                                    this.board[x][yy].data = 1;
-                                    this.board[x][yy].colors = this.board[x][yy - 1].colors;
-                                    this.board[x][yy - 1].data = 0;
-                                    this.board[x][yy - 1].colors = ['rgb(0,0,0)', 'rgb(0,0,0)', 'rgb(0,0,0)'];
-                                }
-                            } 
-                        }
-                    }
-                }
-
-                this.checkLines();
                 this.renderBoard();
                 this.newTetromino();
                 this.update();
+            }
+
+            botBrain() {
+                const rand = Math.random();
+                if (rand < 0.04) {
+                    if (this.checkMovement(this.curPiece, -1, 0)) this.curPiece.x--;
+                } else if (rand < 0.08) {
+                    if (this.checkMovement(this.curPiece, 1, 0)) this.curPiece.x++;
+                } else if (rand < 0.12) {
+                    this.tryRotation();
+                }
+            }
+
+            tryRotation() {
+                const N = this.curPiece.data.length;
+                let rotatedData = Array.from({ length: N }, () => Array(N).fill(0));
+                for (let r = 0; r < N; r++) {
+                    for (let c = 0; c < N; c++) {
+                        rotatedData[c][N - 1 - r] = this.curPiece.data[r][c];
+                    }
+                }
+
+                let dummyPiece = { ...this.curPiece, data: rotatedData };
+                if (this.checkMovement(dummyPiece, 0, 0)) {
+                    this.curPiece.data = rotatedData;
+                }
             }
 
             update() {
@@ -112,6 +115,8 @@
                 } else {
                     if (Date.now() > this.lastMove) {
                         this.lastMove = Date.now() + this.curSpeed;
+                        this.botBrain();
+
                         if (this.checkMovement(this.curPiece, 0, 1)) {
                             this.curPiece.y++;
                         } else {
@@ -125,20 +130,35 @@
                 this.animationId = requestAnimationFrame(() => this.update());
             }
 
+            drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, alpha = 0.7) {
+                let bX = x * this.unitSize;
+                let bY = y * this.unitSize;
+
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.globalAlpha = alpha;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = color;
+                ctx.fillRect(bX, bY, this.unitSize, this.unitSize);
+
+                ctx.globalAlpha = 1.0;
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(bX, bY, this.unitSize, this.unitSize);
+
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(bX + 2, bY + 2, this.unitSize - 4, this.unitSize - 4);
+                ctx.restore();
+            }
+
             renderBoard() {
                 this.bgCtx.clearRect(0, 0, this.bgCanvas.width, this.bgCanvas.height);
                 for (let x = 0; x <= this.boardWidth; x++) {
                     for (let y = 0; y <= this.boardHeight; y++) {
                         if (this.board[x][y].data !== 0) {
-                            let bX = x * this.unitSize;
-                            let bY = y * this.unitSize;
-
-                            this.bgCtx.fillStyle = this.board[x][y].colors[0];
-                            this.bgCtx.fillRect(bX, bY, this.unitSize, this.unitSize);
-                            this.bgCtx.fillStyle = this.board[x][y].colors[1];
-                            this.bgCtx.fillRect(bX + 2, bY + 2, this.unitSize - 4, this.unitSize - 4);
-                            this.bgCtx.fillStyle = this.board[x][y].colors[2];
-                            this.bgCtx.fillRect(bX + 4, bY + 4, this.unitSize - 8, this.unitSize - 8);
+                            this.drawBlock(this.bgCtx, x, y, this.board[x][y].color, 0.6);
                         }
                     }
                 }
@@ -146,19 +166,16 @@
 
             render() {
                 this.fgCtx.clearRect(0, 0, this.fgCanvas.width, this.fgCanvas.height);
+                if (!this.curPiece.data) return;
+
                 for (let x = 0; x < 4; x++) {
                     for (let y = 0; y < 4; y++) {
                         if (this.curPiece.data[x][y] === 1) {
-                            let xPos = (this.curPiece.x + x) * this.unitSize;
-                            let yPos = (this.curPiece.y + y) * this.unitSize;
+                            let targetX = this.curPiece.x + x;
+                            let targetY = this.curPiece.y + y;
 
-                            if (yPos > -1) {
-                                this.fgCtx.fillStyle = this.curPiece.colors[0];
-                                this.fgCtx.fillRect(xPos, yPos, this.unitSize, this.unitSize);
-                                this.fgCtx.fillStyle = this.curPiece.colors[1];
-                                this.fgCtx.fillRect(xPos + 2, yPos + 2, this.unitSize - 4, this.unitSize - 4);
-                                this.fgCtx.fillStyle = this.curPiece.colors[2];
-                                this.fgCtx.fillRect(xPos + 4, yPos + 4, this.unitSize - 8, this.unitSize - 8);
+                            if (targetY > -1) {
+                                this.drawBlock(this.fgCtx, targetX, targetY, this.curPiece.color, 0.8);
                             }
                         }
                     }
@@ -166,17 +183,19 @@
             }
 
             checkMovement(curPiece: any, newX: number, newY: number) {
+                if (!curPiece.data) return false;
                 for (let x = 0; x < 4; x++) {
                     for (let y = 0; y < 4; y++) {
                         if (curPiece.data[x][y] === 1) {
                             let targetX = curPiece.x + x + newX;
                             let targetY = curPiece.y + y + newY;
 
+                            if (targetX >= this.boardWidth || targetX < 0 || targetY > this.boardHeight) return false;
+                            
                             if (!this.board[targetX]) this.board[targetX] = [];
                             if (!this.board[targetX][targetY]) this.board[targetX][targetY] = { data: 0 };
 
-                            if (targetX >= this.boardWidth || targetX < 0 || this.board[targetX][targetY].data == 1) return false;
-                            if (targetY > this.boardHeight) return false;
+                            if (this.board[targetX][targetY].data == 1) return false;
                         }
                     }
                 }
@@ -197,7 +216,7 @@
                             for (x = 0; x <= this.boardWidth; x++) {
                                 if (lineY - 1 > 0) {
                                     this.board[x][lineY].data = this.board[x][lineY - 1].data;
-                                    this.board[x][lineY].colors = this.board[x][lineY - 1].colors;
+                                    this.board[x][lineY].color = this.board[x][lineY - 1].color;
                                 }
                             }
                             lineY--;
@@ -207,6 +226,7 @@
                 }
             }
 
+            // Retour exact à l'ancienne fonction loseScreen
             loseScreen() {
                 let y = this.boardHeight - this.loseBlock;
                 for (let x = 0; x < this.boardWidth; x++) {
@@ -232,8 +252,12 @@
                 for (let x = 0; x < 4; x++) {
                     for (let y = 0; y < 4; y++) {
                         if (curPiece.data[x][y] === 1) {
-                            this.board[x + curPiece.x][y + curPiece.y].data = 1;
-                            this.board[x + curPiece.x][y + curPiece.y].colors = curPiece.colors;
+                            const bX = x + curPiece.x;
+                            const bY = y + curPiece.y;
+                            if (bX >= 0 && bX <= this.boardWidth && bY >= 0 && bY <= this.boardHeight) {
+                                this.board[bX][bY].data = 1;
+                                this.board[bX][bY].color = curPiece.color;
+                            }
                         }
                     }
                 }
@@ -244,9 +268,9 @@
             newTetromino() {
                 let pieceNum = Math.floor(Math.random() * tetrominos.length);
                 this.curPiece.data = tetrominos[pieceNum].data;
-                this.curPiece.colors = tetrominos[pieceNum].colors;
-                this.curPiece.x = Math.floor(Math.random() * (this.boardWidth - this.curPiece.data.length + 1));
-                this.curPiece.y = -4;
+                this.curPiece.color = tetrominos[pieceNum].color;
+                this.curPiece.x = Math.floor(Math.random() * (this.boardWidth - 3));
+                this.curPiece.y = -2;
             }
 
             destroy() {
@@ -259,17 +283,17 @@
         let tetrisInstances: Tetris[] = [];
 
         const setupBoards = () => {
-            // Nettoyage si on redimensionne
             tetrisInstances.forEach(instance => instance.destroy());
             tetrisInstances = [];
 
             const cWidth = container.clientWidth;
             const cHeight = container.clientHeight;
             
-            // Calcul du nombre de grilles (boards)
             const unitSize = 20;
             const boardDiv = unitSize * Math.round(cWidth / unitSize);
-            const boards = 8;
+            const targetBoardWidth = 240; 
+            const boards = Math.max(2, Math.floor(cWidth / targetBoardWidth)); 
+            
             const bWidth = boardDiv / boards;
 
             for (let w = 0; w < boards; w++) {
@@ -279,7 +303,6 @@
 
         setupBoards();
 
-        // Optionnel: Gérer le redimensionnement de l'écran
         const resizeObserver = new ResizeObserver(() => setupBoards());
         resizeObserver.observe(container);
 
@@ -290,4 +313,4 @@
     });
 </script>
 
-<div bind:this={container} class="absolute inset-0 w-full h-full overflow-hidden opacity-30 pointer-events-none"></div>
+<div bind:this={container} class="absolute inset-0 w-full h-full overflow-hidden opacity-40 pointer-events-none"></div>
