@@ -7,13 +7,13 @@
         if (!container) return;
 
         const tetrominos = [
-            { color: '#00FFFF', data: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]] }, // I
-            { color: '#0066FF', data: [[0,0,0,0], [1,1,1,0], [0,0,1,0], [0,0,0,0]] }, // J
-            { color: '#FF8800', data: [[0,0,0,0], [1,1,1,0], [1,0,0,0], [0,0,0,0]] }, // L
-            { color: '#FFE600', data: [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]] }, // O
-            { color: '#00FF00', data: [[0,0,0,0], [0,1,1,0], [1,1,0,0], [0,0,0,0]] }, // S
-            { color: '#CC00FF', data: [[0,0,0,0], [1,1,1,0], [0,1,0,0], [0,0,0,0]] }, // T
-            { color: '#FF0033', data: [[0,0,0,0], [1,1,0,0], [0,1,1,0], [0,0,0,0]] }  // Z
+            { color: '#00FFFF', data: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]] }, 
+            { color: '#0066FF', data: [[0,0,0,0], [1,1,1,0], [0,0,1,0], [0,0,0,0]] }, 
+            { color: '#FF8800', data: [[0,0,0,0], [1,1,1,0], [1,0,0,0], [0,0,0,0]] }, 
+            { color: '#FFE600', data: [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]] }, 
+            { color: '#00FF00', data: [[0,0,0,0], [0,1,1,0], [1,1,0,0], [0,0,0,0]] }, 
+            { color: '#CC00FF', data: [[0,0,0,0], [1,1,1,0], [0,1,0,0], [0,0,0,0]] }, 
+            { color: '#FF0033', data: [[0,0,0,0], [1,1,0,0], [0,1,1,0], [0,0,0,0]] }  
         ];
 
         class Tetris {
@@ -21,7 +21,11 @@
             bgCanvas: HTMLCanvasElement; fgCanvas: HTMLCanvasElement;
             bgCtx: CanvasRenderingContext2D; fgCtx: CanvasRenderingContext2D;
             curPiece: any; lastMove: number = 0; curSpeed: number = 0;
-            unitSize: number = 20; linesCleared: number = 0; level: number = 0; loseBlock: number = 0;
+            
+            // Taille des blocs réduite ici
+            unitSize: number = 10; 
+            
+            linesCleared: number = 0; level: number = 0; loseBlock: number = 0;
             board: any[] = []; boardWidth: number = 0; boardHeight: number = 0;
             animationId: number = 0;
 
@@ -61,10 +65,12 @@
                 this.loseBlock = 0;
 
                 this.boardWidth = Math.floor(this.width / this.unitSize);
-                this.boardHeight = Math.floor(this.height / this.unitSize);
+                
+                // Le "- 1" ici remonte le "sol" d'une case pour éviter que les blocs ne soient coupés
+                this.boardHeight = Math.floor(this.height / this.unitSize) - 1;
+                
                 this.board = [];
 
-                // Plateau qui démarre 100% vide
                 for (let x = 0; x <= this.boardWidth; x++) {
                     this.board[x] = [];
                     for (let y = 0; y <= this.boardHeight; y++) {
@@ -149,7 +155,8 @@
 
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
                 ctx.lineWidth = 1;
-                ctx.strokeRect(bX + 2, bY + 2, this.unitSize - 4, this.unitSize - 4);
+                // Ajustement du carré interne pour les petits blocs
+                ctx.strokeRect(bX + 1, bY + 1, this.unitSize - 2, this.unitSize - 2);
                 ctx.restore();
             }
 
@@ -226,7 +233,6 @@
                 }
             }
 
-            // Retour exact à l'ancienne fonction loseScreen
             loseScreen() {
                 let y = this.boardHeight - this.loseBlock;
                 for (let x = 0; x < this.boardWidth; x++) {
@@ -235,9 +241,10 @@
                     this.bgCtx.fillStyle = 'rgb(80,80,80)';
                     this.bgCtx.fillRect(bX, bY, this.unitSize, this.unitSize);
                     this.bgCtx.fillStyle = 'rgb(150,150,150)';
-                    this.bgCtx.fillRect(bX + 2, bY + 2, this.unitSize - 4, this.unitSize - 4);
+                    // Ajustement des ratios de dessin pour les petits blocs
+                    this.bgCtx.fillRect(bX + 1, bY + 1, this.unitSize - 2, this.unitSize - 2);
                     this.bgCtx.fillStyle = 'rgb(100,100,100)';
-                    this.bgCtx.fillRect(bX + 4, bY + 4, this.unitSize - 8, this.unitSize - 8);
+                    this.bgCtx.fillRect(bX + 2, bY + 2, this.unitSize - 4, this.unitSize - 4);
                 }
 
                 if (this.loseBlock <= this.boardHeight + 1) {
@@ -289,9 +296,10 @@
             const cWidth = container.clientWidth;
             const cHeight = container.clientHeight;
             
-            const unitSize = 20;
+            // On déclare la taille ici aussi pour la division des plateaux
+            const unitSize = 10; 
             const boardDiv = unitSize * Math.round(cWidth / unitSize);
-            const targetBoardWidth = 240; 
+            const targetBoardWidth = 120; // Réduit pour s'adapter à la taille divisée par 2
             const boards = Math.max(2, Math.floor(cWidth / targetBoardWidth)); 
             
             const bWidth = boardDiv / boards;
@@ -313,4 +321,4 @@
     });
 </script>
 
-<div bind:this={container} class="absolute inset-0 w-full h-full overflow-hidden opacity-40 pointer-events-none"></div>
+<div bind:this={container} class="absolute inset-0 w-full h-full opacity-40 pointer-events-none z-[-1]"></div>
