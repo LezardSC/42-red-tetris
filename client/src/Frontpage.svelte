@@ -109,9 +109,6 @@ function joinRoom(targetRoom: string): void {
         </div>
     </header>
 
-    <div class="fixed inset-0 z-0 pointer-events-none opacity-20">
-        <TetrisBackground />
-    </div>
     <h2>Username</h2>
     {#if !username}
     <p>Enter your username to start playing:</p>

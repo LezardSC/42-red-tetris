@@ -162,5 +162,5 @@
 
 <canvas
     bind:this={canvas}
-    class="absolute inset-0 w-full h-full pointer-events-none"
+    class="fixed inset-0 w-full h-full pointer-events-none z-[-1]"
 ></canvas>
