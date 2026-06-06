@@ -4,14 +4,15 @@
 
 <div class="fixed inset-0 bg-slate-950/80 z-[-1]"></div>
 
-<div class="w-full pt-8 pb-6 flex justify-center relative z-10">
-    <header class="relative overflow-hidden bg-slate-900/80 border border-slate-700/60 rounded-3xl px-16 py-10 backdrop-blur-md shadow-2xl">
+<div class="max-w-3xl mx-auto px-4 pt-8 pb-6 relative z-10">
+    <header class="relative w-full overflow-hidden bg-slate-900/80 border border-slate-700/60 rounded-3xl px-16 py-10 backdrop-blur-md shadow-2xl flex justify-center items-center">
         
         <TetrisHeader />
         
         <h1 class="arcade-title text-center select-none cursor-default m-0 relative z-10">
             <span class="neon-red">R<span class="flicker">E</span>D</span><span class="neon-cyan">-TETRIS</span>
         </h1>
+        
     </header>
 </div>
 
