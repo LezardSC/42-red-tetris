@@ -6,20 +6,20 @@ type Room = {
     playerCount: number;
     maxPlayers: number;
     createdAt: number;
-}
+};
 
 const mockRooms: Room[] = [
     { name: 'Room1', playerCount: 2, maxPlayers: 4, createdAt: Date.now() - 60000 },
     { name: 'Hyper_zone', playerCount: 1, maxPlayers: 6, createdAt: Date.now() - 120000 },
     { name: 'yomama', playerCount: 3, maxPlayers: 4, createdAt: Date.now() - 180000 },
     { name: 'Room4', playerCount: 2, maxPlayers: 2, createdAt: Date.now() - 240000 },
-]
+];
 
 const regex: RegExp = /^[a-zA-Z0-9_]+$/;
 
 let usernameInput: string = $state('');
-let username: string = $state('')
-let roomName: string = $state('')
+let username: string = $state('');
+let roomName: string = $state('');
 
 const errors = $state({
     username: '',
@@ -49,9 +49,7 @@ function validateUsername(name: string): boolean {
 }
 
 function setUsername(name: string): void {
-    if (!validateUsername(name)) {
-        return;
-    }
+    if (!validateUsername(name)) return;
     username = name;
 }
 
@@ -72,9 +70,7 @@ function validateRoomName(name: string): boolean {
 }
 
 function createRoom(targetRoom: string): void {
-    if (!validateRoomName(targetRoom)) {
-        return;
-    }
+    if (!validateRoomName(targetRoom)) return;
 
     if (username) {
         router.goto(`/${targetRoom}/${username}`);
@@ -193,7 +189,6 @@ function joinRoom(targetRoom: string): void {
 <style>
     @reference "./main.css";
 
-    /* Utilisation de la même police que le header pour les titres */
     .arcade-heading {
         font-family: 'Press Start 2P', system-ui, sans-serif;
         font-size: 1rem;
@@ -202,12 +197,10 @@ function joinRoom(targetRoom: string): void {
         line-height: 1.5;
     }
 
-    /* Le style "Glassmorphism" pour les conteneurs principaux */
     .glass-panel {
         @apply bg-slate-900/80 border border-slate-700/60 rounded-2xl p-6 md:p-8 backdrop-blur-md shadow-xl;
     }
 
-    /* Inputs stylisés façon terminal/arcade */
     .arcade-input {
         @apply bg-slate-950 border border-slate-600 rounded-lg px-4 py-3 text-slate-100 outline-none transition-all focus:ring-2 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed;
     }
@@ -216,27 +209,22 @@ function joinRoom(targetRoom: string): void {
         @apply ring-cyan-500/50;
     }
 
-    /* Boutons de base */
     .arcade-btn {
         @apply font-bold rounded-lg px-6 py-3 transition-all duration-200 border disabled:opacity-40 disabled:cursor-not-allowed;
         font-family: system-ui, sans-serif;
         letter-spacing: 0.5px;
     }
 
-    /* Variante Cyan */
     .btn-cyan {
         @apply bg-slate-800 text-cyan-400 border-cyan-500/30;
     }
-
     .btn-cyan:hover:not(:disabled) {
         @apply border-cyan-400 bg-cyan-950 shadow-[0_0_15px_rgba(0,255,255,0.3)];
     }
 
-    /* Variante Rouge */
     .btn-red {
         @apply bg-slate-800 text-red-400 border-red-500/30;
     }
-
     .btn-red:hover:not(:disabled) {
         @apply border-red-400 bg-red-950 shadow-[0_0_15px_rgba(255,0,51,0.3)];
     }
