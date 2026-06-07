@@ -75,7 +75,7 @@
 
         function draw(time: number) {
             if (!lastTime) lastTime = time;
-            const dt = Math.min(time - lastTime, 50);
+            const dt = Math.min(time - lastTime, 50); // cap delta time to avoid large jumps (e.g., when switching tabs)
             lastTime = time;
 
             const w = width || window.innerWidth;
