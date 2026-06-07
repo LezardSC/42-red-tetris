@@ -2,9 +2,7 @@
     import { onMount } from 'svelte';
 
     type ShapeDef = { shape: number[][]; color: string };
-    type BlockDef = { r: number; c: number };
-    
-    // Objet classique au lieu d'une classe pour optimiser la réactivité Svelte
+    type BlockDef = { row: number; col: number };
     type ParticleObj = {
         id: number;
         x: number;
@@ -17,10 +15,9 @@
         maxClearance: number;
         cols: number;
         rows: number;
-        blocks: BlockDef[]; // Stocke la position précalculée de chaque carré de la pièce
+        blocks: BlockDef[];
     };
 
-    // On utilise $state pour lier directement la taille à l'écran
     let width = $state(0);
     let height = $state(0);
     let particles = $state<ParticleObj[]>([]);
@@ -37,33 +34,28 @@
         { shape: [[1,1,0],[0,1,1]], color: '#FF0033' }
     ];
 
-    // Fonction de création de particules (remplace le constructeur)
     function createParticle(initialSpawn: boolean, id: number, w: number, h: number): ParticleObj {
         const size = Math.random() * 15 + 12;
         const x = Math.random() * w;
-        
         const type = tetrominos[Math.floor(Math.random() * tetrominos.length)];
-        const shape = type.shape;
-        const color = type.color;
+        const { shape, color } = type;
         const rows = shape.length;
         const cols = shape[0].length;
         
-        // On précalcule les cases pleines pour générer les <div> facilement dans le HTML
         const blocks: BlockDef[] = [];
+
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
-                if (shape[r][c]) blocks.push({ r, c });
+                if (shape[r][c]) blocks.push({ row: r, col: c });
             }
         }
 
+        // calculate max clearance based on the largest possible distance a piece can fall before being recycled
         const maxClearance = Math.max(rows, cols) * size;
-        
-        let y = 0;
-        if (initialSpawn) {
-            y = -(Math.random() * h * 1.5) - maxClearance;
-        } else {
-            y = -maxClearance - (Math.random() * 100);
-        }
+        // If it's the initial spawn, we want to start them above the screen with a random offset. Otherwise, they start just above the top edge.
+        const y = initialSpawn 
+            ? -(Math.random() * h * 1.5) - maxClearance 
+            : -maxClearance - (Math.random() * 100);
 
         return {
             id, x, y, size,
@@ -79,31 +71,27 @@
         const w = window.innerWidth;
         const h = window.innerHeight;
         
-        const count = Math.floor(w / 60);
-        const initialParticles: ParticleObj[] = [];
-        for (let i = 0; i < count; i++) {
-            initialParticles.push(createParticle(true, i, w, h));
-        }
-        particles = initialParticles;
+        particles = Array.from({ length: Math.floor(w / 60) }, (_, i) => createParticle(true, i, w, h));
 
         function draw(time: number) {
             if (!lastTime) lastTime = time;
-            const dt = time - lastTime;
+            const dt = Math.min(time - lastTime, 50);
             lastTime = time;
 
-            const safeDt = Math.min(dt, 50);
-            const currentHeight = height || window.innerHeight;
-            const currentWidth = width || window.innerWidth;
-            
-            // Map renvoie un nouveau tableau, forçant Svelte à mettre à jour les positions dans le HTML
-            particles = particles.map(p => {
-                p.y += p.speed * safeDt;
-                p.rotation += p.rotationSpeed * safeDt;
+            const w = width || window.innerWidth;
+            const h = height || window.innerHeight;
 
-                if (p.y > currentHeight + p.maxClearance) {
-                    return createParticle(false, p.id, currentWidth, currentHeight);
+            // Each particle is updated immutably to avoid direct state mutation
+            particles = particles.map(p => {
+                if (p.y > h + p.maxClearance) {
+                    return createParticle(false, p.id, w, h);
                 }
-                return p;
+                // returning a new object to trigger Svelte's reactivity
+                return { 
+                    ...p, 
+                    y: p.y + p.speed * dt, 
+                    rotation: p.rotation + p.rotationSpeed * dt 
+                };
             });
             
             animationFrameId = requestAnimationFrame(draw);
@@ -111,12 +99,12 @@
 
         animationFrameId = requestAnimationFrame(draw);
 
+        // Cleanup function to cancel the animation frame when the component is destroyed
         return () => cancelAnimationFrame(animationFrameId);
     });
 </script>
 
 <div class="fixed inset-0 w-full h-full pointer-events-none z-[-1] overflow-hidden" bind:clientWidth={width} bind:clientHeight={height}>
-    
     {#each particles as p (p.id)}
         <div 
             class="tetris-piece"
@@ -129,12 +117,7 @@
             {#each p.blocks as block}
                 <div 
                     class="tetris-block"
-                    style="
-                        left: {block.c * p.size}px; 
-                        top: {block.r * p.size}px; 
-                        width: {p.size}px; 
-                        height: {p.size}px;
-                    "
+                    style="left: {block.col * p.size}px; top: {block.row * p.size}px; width: {p.size}px; height: {p.size}px;"
                 >
                     <div class="tetris-block-bg" style="background-color: {p.color}; box-shadow: 0 0 10px {p.color};"></div>
                     <div class="tetris-block-bevel"></div>
@@ -142,32 +125,31 @@
             {/each}
         </div>
     {/each}
-
 </div>
 
 <style>
-    /* Le conteneur principal de la pièce */
+    /* The container for each tetris piece */
     .tetris-piece {
         position: absolute;
-        top: 0; left: 0; /* Essentiel comme point de départ avant le translate GPU */
-        will-change: transform; /* Indique au navigateur d'optimiser l'animation matérielle */
+        top: 0; left: 0; /* Essential as the starting point before GPU translate */
+        will-change: transform; /* Indicates to the browser to optimize the hardware animation */
     }
 
-    /* Le carré extérieur du bloc (bordure blanche) */
+    /* The outer square of the block (white border) */
     .tetris-block {
         position: absolute;
         box-sizing: border-box;
         border: 1.5px solid rgba(255, 255, 255, 0.7);
     }
 
-    /* Le remplissage néon (opacité ciblée sans effacer la bordure) */
+    /* The neon fill (targeted opacity without erasing the border) */
     .tetris-block-bg {
         position: absolute;
         inset: 0;
         opacity: 0.6;
     }
 
-    /* Le petit renfoncement noir à l'intérieur */
+    /* The small recessed area inside */
     .tetris-block-bevel {
         position: absolute;
         top: 1.5px; left: 1.5px; right: 1.5px; bottom: 1.5px;
