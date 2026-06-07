@@ -1,347 +1,296 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    const unitSize = 10;
 
-    type TetrominoDef = { color: string; data: number[][] };
+    type ShapeDef = { shape: number[][]; color: string };
     type BoardCell = { data: number; color?: string };
-    type ActivePiece = { data: number[][] | null; color: string; x: number; y: number };
+    type ActivePiece = { data: number[][]; color: string; x: number; y: number };
 
-    let container: HTMLDivElement;
+    // The state of a single bot, including its board, current piece, and game status
+    type BotState = {
+        id: number;
+        offsetX: number;
+        width: number;
+        height: number;
+        boardWidth: number;
+        boardHeight: number;
+        board: BoardCell[][];
+        piece: ActivePiece | null;
+        lastMove: number;
+        speed: number;
+        mode: 'playing' | 'losing';
+        loseBlock: number;
+    };
 
-    onMount(() => {
-        if (!container) return;
+    /* The 7 standard Tetris pieces with their shapes and colors.
+    Note: Each piece is represented in a 4x4 grid for easier rotation and collision logic. */
+    const tetrominos: ShapeDef[] = [
+        { shape: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]], color: '#00FFFF' }, 
+        { shape: [[0,0,0,0], [1,1,1,0], [0,0,1,0], [0,0,0,0]], color: '#0066FF' }, 
+        { shape: [[0,0,0,0], [1,1,1,0], [1,0,0,0], [0,0,0,0]], color: '#FF8800' }, 
+        { shape: [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]], color: '#FFE600' }, 
+        { shape: [[0,0,0,0], [0,1,1,0], [1,1,0,0], [0,0,0,0]], color: '#00FF00' }, 
+        { shape: [[0,0,0,0], [1,1,1,0], [0,1,0,0], [0,0,0,0]], color: '#CC00FF' }, 
+        { shape: [[0,0,0,0], [1,1,0,0], [0,1,1,0], [0,0,0,0]], color: '#FF0033' }  
+    ];
 
-        const tetrominos: TetrominoDef[] = [
-            { color: '#00FFFF', data: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]] }, 
-            { color: '#0066FF', data: [[0,0,0,0], [1,1,1,0], [0,0,1,0], [0,0,0,0]] }, 
-            { color: '#FF8800', data: [[0,0,0,0], [1,1,1,0], [1,0,0,0], [0,0,0,0]] }, 
-            { color: '#FFE600', data: [[0,0,0,0], [0,1,1,0], [0,1,1,0], [0,0,0,0]] }, 
-            { color: '#00FF00', data: [[0,0,0,0], [0,1,1,0], [1,1,0,0], [0,0,0,0]] }, 
-            { color: '#CC00FF', data: [[0,0,0,0], [1,1,1,0], [0,1,0,0], [0,0,0,0]] }, 
-            { color: '#FF0033', data: [[0,0,0,0], [1,1,0,0], [0,1,1,0], [0,0,0,0]] }  
-        ];
+    function getRandomPiece(boardWidth: number): ActivePiece {
+        const type = tetrominos[Math.floor(Math.random() * tetrominos.length)];
+        return {
+            data: type.shape,
+            color: type.color,
+            x: Math.floor(Math.random() * (boardWidth - 3)),
+            y: -2
+        };
+    }
 
-        class TetrisBot {
-            posX: number;
-            posY: number;
-            width: number;
-            height: number;
-            
-            bgCanvas: HTMLCanvasElement;
-            fgCanvas: HTMLCanvasElement;
-            bgCtx: CanvasRenderingContext2D;
-            fgCtx: CanvasRenderingContext2D;
-            
-            curPiece: ActivePiece;
-            lastMove: number = 0;
-            curSpeed: number = 0;
-            unitSize: number = 10;
-            
-            linesCleared: number = 0;
-            level: number = 0;
-            loseBlock: number = 0;
-            
-            board: BoardCell[][] = [];
-            boardWidth: number = 0;
-            boardHeight: number = 0;
-            animationId: number = 0;
+    function createBot(id: number, offsetX: number, width: number, height: number): BotState {
+        const boardWidth = Math.floor(width / unitSize) - 1; // -1 because pieces can be up to 4 blocks wide, but we want to ensure they spawn fully within the board
+        const boardHeight = Math.floor(height / unitSize) - 1;
+        
+        const board: BoardCell[][] = Array.from({ length: boardWidth + 1 }, () => 
+            Array.from({ length: boardHeight + 1 }, () => ({ data: 0 }))
+        );
 
-            constructor(x: number, y: number, width: number, height: number) {
-                this.posX = x || 0;
-                this.posY = y || 0;
-                this.width = width;
-                this.height = height;
+        return {
+            id, offsetX, width, height, boardWidth, boardHeight, board,
+            piece: getRandomPiece(boardWidth),
+            lastMove: performance.now(),
+            speed: 20 + Math.random() * 40,
+            mode: 'playing',
+            loseBlock: 0
+        };
+    }
 
-                this.bgCanvas = document.createElement('canvas');
-                this.fgCanvas = document.createElement('canvas');
-                
-                this.bgCanvas.width = this.width;
-                this.fgCanvas.width = this.width;
-                this.bgCanvas.height = this.height;
-                this.fgCanvas.height = this.height;
-
-                this.bgCtx = this.bgCanvas.getContext('2d')!;
-                this.fgCtx = this.fgCanvas.getContext('2d')!;
-
-                this.bgCanvas.style.position = 'absolute';
-                this.fgCanvas.style.position = 'absolute';
-                this.bgCanvas.style.left = `${this.posX}px`;
-                this.bgCanvas.style.top = `${this.posY}px`;
-                this.fgCanvas.style.left = `${this.posX}px`;
-                this.fgCanvas.style.top = `${this.posY}px`;
-
-                container.appendChild(this.bgCanvas);
-                container.appendChild(this.fgCanvas);
-                
-                this.curPiece = { data: null, color: '#000000', x: 0, y: 0 };
-                this.init();
+    function isCollision(piece: ActivePiece, board: BoardCell[][], bw: number, bh: number, dx: number, dy: number): boolean {
+        const size = piece.data.length;
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (piece.data[r][c] === 1) {
+                    const nx = piece.x + c + dx;
+                    const ny = piece.y + r + dy;
+                    if (nx < 0 || nx > bw || ny > bh) return true; // Out of bounds
+                    if (ny >= 0 && board[nx]?.[ny]?.data === 1) return true; // Collision with existing block (ignore blocks above the board)
+                }
             }
+        }
+        return false;
+    }
 
-            init(): void {
-                this.lastMove = Date.now();
-                this.curSpeed = 20 + Math.random() * 40; 
-                this.linesCleared = 0;
-                this.level = 0;
-                this.loseBlock = 0;
-                
-                this.boardWidth = Math.floor(this.width / this.unitSize);
-                this.boardHeight = Math.floor(this.height / this.unitSize) - 1;
-                this.board = [];
+    function rotatePiece(piece: ActivePiece): ActivePiece {
+        const size = piece.data.length;
+        const rotatedData = Array.from({ length: size }, () => Array(size).fill(0));
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                rotatedData[c][size - 1 - r] = piece.data[r][c];
+            }
+        }
+        // Retourne un NOUVEL objet (immuabilité)
+        return { ...piece, data: rotatedData };
+    }
 
-                for (let x = 0; x <= this.boardWidth; x++) {
-                    this.board[x] = [];
-                    for (let y = 0; y <= this.boardHeight; y++) {
-                        this.board[x][y] = { data: 0, color: '#000000' };
+    function botBrain(piece: ActivePiece, board: BoardCell[][], bw: number, bh: number): ActivePiece {
+        const rand = Math.random();
+        if (rand < 0.04 && !isCollision(piece, board, bw, bh, -1, 0)) {
+            return { ...piece, x: piece.x - 1 };
+        } else if (rand < 0.08 && !isCollision(piece, board, bw, bh, 1, 0)) {
+            return { ...piece, x: piece.x + 1 };
+        } else if (rand < 0.12) {
+            const rotated = rotatePiece(piece);
+            if (!isCollision(rotated, board, bw, bh, 0, 0)) return rotated;
+        }
+        return piece;
+    }
+
+    // When a piece can no longer move down, we lock it into the board and check for line clears. Returns a new BotState with the updated board and a new piece.
+    function lockPieceAndClearLines(bot: BotState): BotState {
+        if (!bot.piece) return bot;
+        
+        // Deep Copy of the board to maintain immutability
+        const newBoard = bot.board.map(col => [...col]);
+        const size = bot.piece.data.length;
+        
+        // 1. Lock the piece into the board
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (bot.piece.data[r][c] === 1) {
+                    const bx = bot.piece.x + c;
+                    const by = bot.piece.y + r;
+                    if (bx >= 0 && bx <= bot.boardWidth && by >= 0 && by <= bot.boardHeight) {
+                        newBoard[bx][by] = { data: 1, color: bot.piece.color };
                     }
                 }
-
-                this.renderBoard();
-                this.newTetromino();
-                this.update();
-            }
-
-            botBrain(): void {
-                const rand = Math.random();
-                if (rand < 0.04) {
-                    if (this.checkMovement(this.curPiece, -1, 0)) this.curPiece.x--;
-                } else if (rand < 0.08) {
-                    if (this.checkMovement(this.curPiece, 1, 0)) this.curPiece.x++;
-                } else if (rand < 0.12) {
-                    this.tryRotation();
-                }
-            }
-
-            tryRotation(): void {
-                if (!this.curPiece.data) return;
-                
-                const size = this.curPiece.data.length;
-                let rotatedData = Array.from({ length: size }, () => Array(size).fill(0));
-                
-                for (let r = 0; r < size; r++) {
-                    for (let c = 0; c < size; c++) {
-                        rotatedData[c][size - 1 - r] = this.curPiece.data[r][c];
-                    }
-                }
-
-                let dummyPiece: ActivePiece = { ...this.curPiece, data: rotatedData };
-                if (this.checkMovement(dummyPiece, 0, 0)) {
-                    this.curPiece.data = rotatedData;
-                }
-            }
-
-            update(): void {
-                if (!this.checkMovement(this.curPiece, 0, 1)) {
-                    if (this.curPiece.y < -1) {
-                        this.loseScreen();
-                        return;
-                    } else {
-                        this.fillBoard(this.curPiece);
-                        this.newTetromino();
-                    }
-                } else {
-                    if (Date.now() > this.lastMove) {
-                        this.lastMove = Date.now() + this.curSpeed;
-                        this.botBrain();
-
-                        if (this.checkMovement(this.curPiece, 0, 1)) {
-                            this.curPiece.y++;
-                        } else {
-                            this.fillBoard(this.curPiece);
-                            this.newTetromino();
-                        }
-                    }
-                }
-
-                this.render();
-                this.animationId = requestAnimationFrame(() => this.update());
-            }
-
-            drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, alpha = 0.7): void {
-                const bX = x * this.unitSize;
-                const bY = y * this.unitSize;
-
-                ctx.save();
-                ctx.fillStyle = color;
-                ctx.globalAlpha = alpha;
-                ctx.shadowBlur = 6;
-                ctx.shadowColor = color;
-                ctx.fillRect(bX, bY, this.unitSize, this.unitSize);
-
-                ctx.globalAlpha = 1.0;
-                ctx.shadowBlur = 0;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(bX, bY, this.unitSize, this.unitSize);
-
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(bX + 1, bY + 1, this.unitSize - 2, this.unitSize - 2);
-                ctx.restore();
-            }
-
-            renderBoard(): void {
-                this.bgCtx.clearRect(0, 0, this.bgCanvas.width, this.bgCanvas.height);
-                for (let x = 0; x <= this.boardWidth; x++) {
-                    for (let y = 0; y <= this.boardHeight; y++) {
-                        if (this.board[x][y].data !== 0 && this.board[x][y].color) {
-                            this.drawBlock(this.bgCtx, x, y, this.board[x][y].color!, 0.6);
-                        }
-                    }
-                }
-            }
-
-            render(): void {
-                this.fgCtx.clearRect(0, 0, this.fgCanvas.width, this.fgCanvas.height);
-                if (!this.curPiece.data) return;
-
-                for (let x = 0; x < 4; x++) {
-                    for (let y = 0; y < 4; y++) {
-                        if (this.curPiece.data[x][y] === 1) {
-                            const targetX = this.curPiece.x + x;
-                            const targetY = this.curPiece.y + y;
-
-                            if (targetY > -1) {
-                                this.drawBlock(this.fgCtx, targetX, targetY, this.curPiece.color, 0.8);
-                            }
-                        }
-                    }
-                }
-            }
-
-            checkMovement(piece: ActivePiece, newX: number, newY: number): boolean {
-                if (!piece.data) return false;
-                
-                for (let x = 0; x < 4; x++) {
-                    for (let y = 0; y < 4; y++) {
-                        if (piece.data[x][y] === 1) {
-                            const targetX = piece.x + x + newX;
-                            const targetY = piece.y + y + newY;
-                            
-                            if (targetX >= this.boardWidth || targetX < 0 || targetY > this.boardHeight) return false;
-                            if (!this.board[targetX]) this.board[targetX] = [];
-                            if (!this.board[targetX][targetY]) this.board[targetX][targetY] = { data: 0 };
-                            if (this.board[targetX][targetY].data === 1) return false;
-                        }
-                    }
-                }
-                return true;
-            }
-
-            checkLines(): void {
-                let y = this.boardHeight + 1;
-                while (y--) {
-                    let x = this.boardWidth;
-                    let lines = 0;
-                    
-                    while (x--) {
-                        if (this.board[x][y].data === 1) lines++;
-                    }
-                    
-                    if (lines === this.boardWidth) {
-                        this.linesCleared++;
-                        let lineY = y;
-                        
-                        while (lineY) {
-                            for (x = 0; x <= this.boardWidth; x++) {
-                                if (lineY - 1 > 0) {
-                                    this.board[x][lineY].data = this.board[x][lineY - 1].data;
-                                    this.board[x][lineY].color = this.board[x][lineY - 1].color;
-                                }
-                            }
-                            lineY--;
-                        }
-                        y++;
-                    }
-                }
-            }
-
-            loseScreen(): void {
-                const y = this.boardHeight - this.loseBlock;
-                for (let x = 0; x < this.boardWidth; x++) {
-                    const bX = x * this.unitSize;
-                    const bY = y * this.unitSize;
-                    
-                    this.bgCtx.fillStyle = 'rgb(80,80,80)';
-                    this.bgCtx.fillRect(bX, bY, this.unitSize, this.unitSize);
-                    
-                    this.bgCtx.fillStyle = 'rgb(150,150,150)';
-                    this.bgCtx.fillRect(bX + 1, bY + 1, this.unitSize - 2, this.unitSize - 2);
-                    
-                    this.bgCtx.fillStyle = 'rgb(100,100,100)';
-                    this.bgCtx.fillRect(bX + 2, bY + 2, this.unitSize - 4, this.unitSize - 4);
-                }
-
-                if (this.loseBlock <= this.boardHeight + 1) {
-                    this.loseBlock++;
-                    this.animationId = requestAnimationFrame(() => this.loseScreen());
-                } else {
-                    this.init();
-                }
-            }
-
-            fillBoard(piece: ActivePiece): void {
-                if (!piece.data) return;
-                
-                for (let x = 0; x < 4; x++) {
-                    for (let y = 0; y < 4; y++) {
-                        if (piece.data[x][y] === 1) {
-                            const bX = x + piece.x;
-                            const bY = y + piece.y;
-                            if (bX >= 0 && bX <= this.boardWidth && bY >= 0 && bY <= this.boardHeight) {
-                                this.board[bX][bY].data = 1;
-                                this.board[bX][bY].color = piece.color;
-                            }
-                        }
-                    }
-                }
-                this.checkLines();
-                this.renderBoard();
-            }
-
-            newTetromino(): void {
-                const pieceNum = Math.floor(Math.random() * tetrominos.length);
-                this.curPiece.data = tetrominos[pieceNum].data;
-                this.curPiece.color = tetrominos[pieceNum].color;
-                this.curPiece.x = Math.floor(Math.random() * (this.boardWidth - 3));
-                this.curPiece.y = -2;
-            }
-
-            destroy(): void {
-                cancelAnimationFrame(this.animationId);
-                this.bgCanvas.remove();
-                this.fgCanvas.remove();
             }
         }
 
-        let tetrisInstances: TetrisBot[] = [];
-        
-        const setupBoards = () => {
-            tetrisInstances.forEach(instance => instance.destroy());
-            tetrisInstances = [];
-
-            const cWidth = container.clientWidth;
-            const cHeight = container.clientHeight;
-            const unitSize = 10;
-            const boardDiv = unitSize * Math.round(cWidth / unitSize);
-            const targetBoardWidth = 120;
-            const boards = Math.max(2, Math.floor(cWidth / targetBoardWidth));
-            const bWidth = boardDiv / boards;
-
-            for (let w = 0; w < boards; w++) {
-                const startX = unitSize * Math.round((w * bWidth) / unitSize);
-                tetrisInstances.push(new TetrisBot(startX, 0, bWidth, cHeight));
+        // 2. Clear full lines and move everything down
+        for (let y = bot.boardHeight; y >= 0; y--) {
+            let lineFull = true;
+            for (let x = 0; x <= bot.boardWidth; x++) {
+                if (newBoard[x][y].data === 0) {
+                    lineFull = false;
+                    break;
+                }
             }
-        };
+            if (lineFull) {
+                // Move everything above down
+                for (let lineY = y; lineY > 0; lineY--) {
+                    for (let x = 0; x <= bot.boardWidth; x++) {
+                        newBoard[x][lineY] = newBoard[x][lineY - 1];
+                    }
+                }
+                // Clear the top line
+                for (let x = 0; x <= bot.boardWidth; x++) {
+                    newBoard[x][0] = { data: 0 };
+                }
+                y++; // Recheck the same line after moving down, in case of multiple line clears
+            }
+        }
 
-        setupBoards();
+        return { ...bot, board: newBoard, piece: getRandomPiece(bot.boardWidth) };
+    }
 
-        const resizeObserver = new ResizeObserver(() => setupBoards());
-        resizeObserver.observe(container);
+    // Takes the current bot state and the current time, and returns a new bot state based on the game logic. This function is called on every frame for each bot.
+    function updateBot(bot: BotState, time: number): BotState {
+        if (bot.mode === 'losing') {
+            // Game over animation. Rising blocks effect
+            if (time - bot.lastMove > 30) {
+                if (bot.loseBlock > bot.boardHeight) {
+                    return createBot(bot.id, bot.offsetX, bot.width, bot.height); // Reset
+                }
+                return { ...bot, loseBlock: bot.loseBlock + 1, lastMove: time };
+            }
+            return bot;
+        }
+
+        if (!bot.piece) return bot;
+
+        // Falling speed
+        if (time - bot.lastMove > bot.speed) {
+            const nextPiece = botBrain(bot.piece, bot.board, bot.boardWidth, bot.boardHeight);
+
+            if (!isCollision(nextPiece, bot.board, bot.boardWidth, bot.boardHeight, 0, 1)) {
+                return { ...bot, piece: { ...nextPiece, y: nextPiece.y + 1 }, lastMove: time };
+            } else {
+                if (nextPiece.y < 0) {
+                    return { ...bot, mode: 'losing', lastMove: time }; // Game Over
+                } else {
+                    return { ...lockPieceAndClearLines({ ...bot, piece: nextPiece }), lastMove: time };
+                }
+            }
+        }
+        return bot;
+    }
+
+
+    let clientWidth = $state(0);
+    let clientHeight = $state(0);
+    let bots = $state<BotState[]>([]);
+
+    // Initialization effect to create bots based on the initial window size
+    $effect(() => {
+        if (!clientWidth || !clientHeight) return;
         
-        return () => {
-            resizeObserver.disconnect();
-            tetrisInstances.forEach(instance => instance.destroy());
+        const targetBoardWidth = 120;
+        const numBoards = Math.max(2, Math.floor(clientWidth / targetBoardWidth));
+        
+        // Only create bots if we don't have the correct number already (e.g., on initial load or when resizing)
+        if (bots.length !== numBoards) {
+            const boardDiv = unitSize * Math.round(clientWidth / unitSize);
+            const bWidth = boardDiv / numBoards;
+            
+            bots = Array.from({ length: numBoards }, (_, i) => {
+                const offsetX = unitSize * Math.round((i * bWidth) / unitSize);
+                return createBot(i, offsetX, bWidth, clientHeight);
+            });
+        }
+    });
+
+    // Game loop (60 FPS)
+    $effect(() => {
+        let frame: number;
+        const loop = (time: number) => {
+            // map() returns a new array, which is essential for Svelte's reactivity to detect changes in the bots array. We update each bot's state based on the game logic defined in updateBot.
+            bots = bots.map(bot => updateBot(bot, time));
+            frame = requestAnimationFrame(loop);
         };
+        frame = requestAnimationFrame(loop);
+        
+        return () => cancelAnimationFrame(frame);
     });
 </script>
 
-<div bind:this={container} class="absolute inset-0 w-full h-full opacity-40 pointer-events-none z-[-1]"></div>
+<div class="absolute inset-0 w-full h-full opacity-40 pointer-events-none z-[-1] overflow-hidden" bind:clientWidth bind:clientHeight>
+    {#each bots as bot (bot.id)}
+        <div class="absolute top-0 bottom-0" style="left: {bot.offsetX}px; width: {bot.width}px;">
+            
+            {#each bot.board as col, x}
+                {#each col as cell, y}
+                    {#if cell.data === 1 && cell.color}
+                        <div class="tetris-block" style="transform: translate({x * unitSize}px, {y * unitSize}px);">
+                            <div class="tetris-block-bg" style="background-color: {cell.color}; box-shadow: 0 0 10px {cell.color};"></div>
+                            <div class="tetris-block-bevel"></div>
+                        </div>
+                    {/if}
+                {/each}
+            {/each}
+
+            {#if bot.mode === 'playing' && bot.piece}
+                {#each bot.piece.data as row, r}
+                    {#each row as val, c}
+                        {#if val === 1}
+                            <div class="tetris-block" style="transform: translate({(bot.piece.x + c) * unitSize}px, {(bot.piece.y + r) * unitSize}px);">
+                                <div class="tetris-block-bg" style="background-color: {bot.piece.color}; box-shadow: 0 0 10px {bot.piece.color};"></div>
+                                <div class="tetris-block-bevel"></div>
+                            </div>
+                        {/if}
+                    {/each}
+                {/each}
+            {/if}
+
+            {#if bot.mode === 'losing' && bot.loseBlock > 0}
+                {#each Array(bot.boardWidth + 1) as _, x}
+                    {#each Array(bot.loseBlock) as _, dy}
+                        {@const y = bot.boardHeight - dy}
+                        {#if y >= 0}
+                            <div class="tetris-block" style="transform: translate({x * unitSize}px, {y * unitSize}px);">
+                                <div class="tetris-block-bg" style="background-color: #505050; opacity: 1; box-shadow: none;"></div>
+                                <div class="tetris-block-bevel" style="border-color: rgba(255,255,255,0.1)"></div>
+                            </div>
+                        {/if}
+                    {/each}
+                {/each}
+            {/if}
+
+        </div>
+    {/each}
+</div>
+
+<style>
+    /*  Using absolute positioning and GPU-accelerated transforms for smooth animation of blocks.
+        Each block is a 10x10 pixel square (unitSize) with a colored background and a bevel effect for depth.
+        The will-change property hints to the browser to optimize for animations on the transform property. *
+    */
+    .tetris-block {
+        position: absolute;
+        top: 0; left: 0;
+        width: 10px; /* Aligned on unitSize = 10 */
+        height: 10px;
+        box-sizing: border-box;
+        border: 1.5px solid rgba(255, 255, 255, 0.7);
+        will-change: transform;
+    }
+
+    .tetris-block-bg {
+        position: absolute;
+        inset: 0;
+        opacity: 0.6;
+    }
+
+    .tetris-block-bevel {
+        position: absolute;
+        top: 1px; left: 1px; right: 1px; bottom: 1px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        z-index: 10;
+    }
+</style>
