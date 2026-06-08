@@ -84,7 +84,7 @@
                 rotatedData[c][size - 1 - r] = piece.data[r][c];
             }
         }
-        // Retourne un NOUVEL objet (immuabilité)
+
         return { ...piece, data: rotatedData };
     }
 

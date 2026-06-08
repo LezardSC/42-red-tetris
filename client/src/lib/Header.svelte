@@ -5,7 +5,7 @@
 <div class="fixed inset-0 bg-slate-950/80 z-[-1]"></div>
 
 <div class="max-w-3xl mx-auto px-4 pt-8 pb-6 relative z-10">
-    <header class="relative w-full overflow-hidden bg-slate-900/80 border border-slate-700/60 rounded-3xl px-16 py-10 backdrop-blur-md shadow-2xl flex justify-center items-center">
+    <header class="relative w-full overflow-hidden bg-slate-900/80 border border-slate-700/60 rounded-2xl px-16 py-10 backdrop-blur-md shadow-2xl flex justify-center items-center">
         
         <TetrisHeader />
         
