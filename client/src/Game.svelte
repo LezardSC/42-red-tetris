@@ -3,7 +3,12 @@ type Player = { name: string; alive: boolean };
 // 'X' = indestructible penalty line, '.' = empty
 type Cell = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L' | 'X' | '.';
 
-let { username, players, onLeave }: { username: string; players: Player[]; onLeave: () => void } = $props();
+let { username, players, onLeave, onGameOver }: {
+    username: string;
+    players: Player[];
+    onLeave: () => void;
+    onGameOver: (winner: string | null) => void;
+} = $props();
 
 const ROWS = 20;
 
@@ -64,6 +69,16 @@ const opponents = $derived(
             spectrum: MOCK_SPECTRUMS[i % MOCK_SPECTRUMS.length],
         })),
 );
+
+// MOCK: stand-ins for the server's `game:over`. Topping out hands the win
+// to the first opponent still alive (none in solo).
+function mockWin(): void {
+    onGameOver(username);
+}
+
+function mockTopOut(): void {
+    onGameOver(opponents.find(opponent => opponent.alive)?.name ?? null);
+}
 </script>
 
 <div class="flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-center">
@@ -90,7 +105,14 @@ const opponents = $derived(
                 </div>
             </div>
 
-            <button class="arcade-btn btn-red self-start" onclick={onLeave}>Leave</button>
+            <div class="flex flex-col gap-2 self-start">
+                <button class="arcade-btn btn-red" onclick={onLeave}>Leave</button>
+                <!-- MOCK: stand in for the server ending the game -->
+                {#if opponents.length > 0}
+                    <button class="mock-btn" onclick={mockWin}>[mock] Win</button>
+                {/if}
+                <button class="mock-btn" onclick={mockTopOut}>[mock] Top out</button>
+            </div>
         </aside>
     </section>
 
@@ -198,5 +220,9 @@ const opponents = $derived(
     }
     .btn-red:hover {
         @apply border-red-400 bg-red-950 shadow-[0_0_15px_rgba(255,0,51,0.3)];
+    }
+
+    .mock-btn {
+        @apply text-xs text-slate-400 bg-slate-800/60 border border-dashed border-slate-600 rounded px-2 py-1 hover:text-slate-200 hover:border-slate-400;
     }
 </style>
