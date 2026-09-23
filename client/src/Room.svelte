@@ -1,5 +1,6 @@
 <script lang="ts">
 import { router } from 'tinro';
+import Game from './Game.svelte';
 
 type Player = {
     name: string;
@@ -50,13 +51,17 @@ function emptySlots(status: RoomStatus): number[] {
     return Array.from({ length: Math.max(status.max - status.players.length, 0) }, (_, i) => i);
 }
 
+// MOCK: flipped by `startGame` until the server's `room:status` does it.
+let started: boolean = $state(false);
+
 const error: string = $derived(validateParams(room, username));
-const status: RoomStatus | null = $derived(error ? null : mockJoin(room, username));
+const status: RoomStatus | null = $derived(error ? null : { ...mockJoin(room, username), inGame: started });
 const isHost: boolean = $derived(status?.host === username);
 
 function startGame(): void {
     // TODO: emit `game:start` once the socket is wired.
     console.log(`[mock] ${username} starts the game in room ${room}`);
+    started = true;
 }
 
 function leaveRoom(): void {
@@ -65,7 +70,7 @@ function leaveRoom(): void {
 }
 </script>
 
-<main class="max-w-3xl mx-auto px-4 pb-12 flex flex-col gap-8 text-slate-200 relative z-10">
+<main class="{status?.inGame ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 pb-12 flex flex-col gap-8 text-slate-200 relative z-10">
 
     {#if error || !status}
         <section class="glass-panel flex flex-col items-center gap-6 text-center">
@@ -73,6 +78,8 @@ function leaveRoom(): void {
             <p class="text-slate-400">{error}</p>
             <button class="arcade-btn btn-cyan" onclick={leaveRoom}>Back to home</button>
         </section>
+    {:else if status.inGame}
+        <Game {username} players={status.players} onLeave={leaveRoom} />
     {:else}
         <section class="glass-panel flex flex-col gap-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -124,7 +131,11 @@ function leaveRoom(): void {
                 <p class="text-slate-400 text-center sm:text-left">
                     Waiting for <strong class="text-amber-400">{status.host}</strong> to start the game<span class="dots"></span>
                 </p>
-                <button class="arcade-btn btn-red" onclick={leaveRoom}>Leave</button>
+                <div class="flex gap-3">
+                    <button class="arcade-btn btn-red" onclick={leaveRoom}>Leave</button>
+                    <!-- MOCK: stands in for the host starting the game from another client -->
+                    <button class="arcade-btn btn-cyan" onclick={startGame}>[mock] Host starts</button>
+                </div>
             {/if}
         </section>
     {/if}
