@@ -1,6 +1,7 @@
 <script lang="ts">
 import { router } from 'tinro';
 import Game from './Game.svelte';
+import GameOver from './GameOver.svelte';
 
 type Player = {
     name: string;
@@ -51,17 +52,33 @@ function emptySlots(status: RoomStatus): number[] {
     return Array.from({ length: Math.max(status.max - status.players.length, 0) }, (_, i) => i);
 }
 
-// MOCK: flipped by `startGame` until the server's `room:status` does it.
-let started: boolean = $state(false);
+// lobby → playing (`game:start`) → finished (`game:over`) → lobby (Back to room)
+type Phase = 'lobby' | 'playing' | 'finished';
+
+let phase: Phase = $state('lobby');
+// Payload of `game:over`: last player alive, or null.
+let winner: string | null = $state(null);
 
 const error: string = $derived(validateParams(room, username));
-const status: RoomStatus | null = $derived(error ? null : { ...mockJoin(room, username), inGame: started });
+// MOCK: `inGame` follows the local phase until the server's `room:status` does it.
+const status: RoomStatus | null = $derived(error ? null : { ...mockJoin(room, username), inGame: phase !== 'lobby' });
 const isHost: boolean = $derived(status?.host === username);
 
 function startGame(): void {
     // TODO: emit `game:start` once the socket is wired.
     console.log(`[mock] ${username} starts the game in room ${room}`);
-    started = true;
+    winner = null;
+    phase = 'playing';
+}
+
+// TODO: call from the `game:over` listener once the socket is wired.
+function endGame(winnerName: string | null): void {
+    winner = winnerName;
+    phase = 'finished';
+}
+
+function backToRoom(): void {
+    phase = 'lobby';
 }
 
 function leaveRoom(): void {
@@ -70,7 +87,7 @@ function leaveRoom(): void {
 }
 </script>
 
-<main class="{status?.inGame ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 pb-12 flex flex-col gap-8 text-slate-200 relative z-10">
+<main class="{phase !== 'lobby' ?'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 pb-12 flex flex-col gap-8 text-slate-200 relative z-10">
 
     {#if error || !status}
         <section class="glass-panel flex flex-col items-center gap-6 text-center">
@@ -78,8 +95,11 @@ function leaveRoom(): void {
             <p class="text-slate-400">{error}</p>
             <button class="arcade-btn btn-cyan" onclick={leaveRoom}>Back to home</button>
         </section>
-    {:else if status.inGame}
-        <Game {username} players={status.players} onLeave={leaveRoom} />
+    {:else if phase !== 'lobby'}
+        <Game {username} players={status.players} onLeave={leaveRoom} onGameOver={endGame} />
+        {#if phase === 'finished'}
+            <GameOver {username} {winner} solo={status.players.length === 1} onReplay={backToRoom} onQuit={leaveRoom} />
+        {/if}
     {:else}
         <section class="glass-panel flex flex-col gap-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
