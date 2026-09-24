@@ -10,9 +10,9 @@ type Room = {
 
 const mockRooms: Room[] = [
     { name: 'Room1', playerCount: 2, maxPlayers: 4, createdAt: Date.now() - 60000 },
-    { name: 'Hyper_zone', playerCount: 1, maxPlayers: 6, createdAt: Date.now() - 120000 },
+    { name: 'Hyper_zone', playerCount: 1, maxPlayers: 4, createdAt: Date.now() - 120000 },
     { name: 'yomama', playerCount: 3, maxPlayers: 4, createdAt: Date.now() - 180000 },
-    { name: 'Room4', playerCount: 2, maxPlayers: 2, createdAt: Date.now() - 240000 },
+    { name: 'Room4', playerCount: 4, maxPlayers: 4, createdAt: Date.now() - 240000 },
 ];
 
 const regex: RegExp = /^[a-zA-Z0-9_]+$/;
