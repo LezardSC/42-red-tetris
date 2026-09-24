@@ -2,6 +2,7 @@ import type { Socket } from 'socket.io';
 import type { FastifyInstance } from 'fastify';
 import type RoomManager from '../back/room.ts';
 import type GameManager from '../back/game.ts';
+import type UserManager from '../back/user.ts';
 
 
 class HandlerFactory {
@@ -9,11 +10,13 @@ class HandlerFactory {
     server!: FastifyInstance;
     roomManager!: RoomManager;
     gameManager!: GameManager;
+    userManager!: UserManager;
 
-    public constructor(server: FastifyInstance, roomManager: RoomManager, gameManager: GameManager) {
+    public constructor(server: FastifyInstance, roomManager: RoomManager, gameManager: GameManager, userManager: UserManager) {
         this.server = server;
         this.gameManager = gameManager;
         this.roomManager = roomManager;
+        this.userManager = userManager;
     }
     
     public createDisconnectHandler(socket: Socket) {
@@ -24,6 +27,12 @@ class HandlerFactory {
               this.server.socketIO.to(roomId).emit("roomstatus", this.roomManager.getRoomStatus(roomId))
             }
             // Manage disconnection during game here
+        }
+    }
+
+    public createPlayerNameHandler(socket: Socket) {
+        return (name: string) => {
+            this.userManager.addUser(socket.id, name);
         }
     }
     
