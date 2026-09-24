@@ -27,6 +27,8 @@ export type GameStatus = {
 
 let socket: Socket | null = null;
 
+export const connection = $state({ connected: false, id: '' });
+
 export function getSocket(): Socket | null {
     return socket;
 }
@@ -36,7 +38,21 @@ export function connect(): Socket {
         console.log('This client already possesses a socket.');
         return socket;
     }
-    socket = io();
+    const s: Socket = io();
+
+    s.on('connect', () => {
+        connection.connected = true;
+        connection.id = s.id ?? '';
+    });
+
+    s.on('disconnect', () => {
+        connection.connected = false;
+        connection.id = '';
+    });
+
+    s.on('connect_error', (err) => console.warn(`connect_error: ${err.message}`));
+
+    socket = s;
     return socket;
 }
 
@@ -45,4 +61,6 @@ export function disconnect(): void {
     console.log(`Disconnecting socket: ${socket.id}`);
     socket.disconnect();
     socket = null;
+    connection.connected = false;
+    connection.id = '';
 }
