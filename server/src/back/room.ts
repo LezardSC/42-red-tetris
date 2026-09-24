@@ -1,4 +1,7 @@
 import type { FastifyInstance } from "fastify"
+import { EventEmitter } from "events";
+import { userManager } from "../server/server.ts";
+
 
 class RoomManager {
     server!: FastifyInstance;
@@ -11,6 +14,7 @@ class RoomManager {
     public create(host: string, roomId: string): boolean {
         this.rooms.push([roomId, new Room(host, roomId)]);
         this.server.log.info(`Created room ${roomId} with host ${host}.`);
+        this.server.socketIO.emit('rooms', this.rooms)
         return true;
     }
 
@@ -20,6 +24,7 @@ class RoomManager {
         if (index !== -1) {
             this.rooms.splice(index, 1);
             this.server.log.info(`Deleted room ${roomId}}.`);
+            this.server.socketIO.emit('rooms', this.rooms)
             return true;
         } 
         else {
@@ -203,10 +208,15 @@ class Room {
     }
 
     public getStatus(): RoomStatus {
+        let players: Array<string | undefined> = []
+        this.players.forEach(
+            player => players.push(userManager.getUserName(player))
+        )
+
         return {
             name: this.name,
-            host: this.host,
-            players: this.players,
+            host: userManager.getUserName(this.host),
+            players: players,
             maxPlayers: this.maxPlayers
         }
     }
@@ -216,7 +226,7 @@ class Room {
 type RoomStatus = {
     name: string,
     host: string | undefined,
-    players: Array<string>,
+    players: Array<string | undefined>,
     maxPlayers: number
 }
 
