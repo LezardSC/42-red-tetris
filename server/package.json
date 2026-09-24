@@ -25,7 +25,6 @@
     "fastify-plugin": "^6.0.0",
     "nodemon": "^3.1.14",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.3"
