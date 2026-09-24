@@ -1,8 +1,10 @@
 import EventEmitter from "events";
 import { Piece, Coordinates, Color } from "./piece.ts";
+import { userManager } from "../server/server.ts";
 
 class Player {
     playerId!: string;
+    playerName!: string | undefined;
     piece!: Piece;
     boardSize!: [number, number];
     board!: Array<Array<number>>;
@@ -15,6 +17,7 @@ class Player {
 
     public constructor(playerId: string, boardSize: [number, number], firstPiece: string | undefined) {
         this.playerId = playerId;
+        this.playerName = userManager.getUserName(playerId);
         this.boardSize = boardSize;
         this.board = new Array<Array<number>>(boardSize[0] * boardSize[1]);
         for (let i: number = 0; i < this.board.length; i++) {
