@@ -10,9 +10,11 @@ type Room = {
 
 const mockRooms: Room[] = [
     { name: 'Room1', playerCount: 2, maxPlayers: 4, createdAt: Date.now() - 60000 },
-    { name: 'Hyper_zone', playerCount: 1, maxPlayers: 6, createdAt: Date.now() - 120000 },
+    { name: 'Hyper_zone', playerCount: 1, maxPlayers: 4, createdAt: Date.now() - 120000 },
     { name: 'yomama', playerCount: 3, maxPlayers: 4, createdAt: Date.now() - 180000 },
-    { name: 'Room4', playerCount: 2, maxPlayers: 2, createdAt: Date.now() - 240000 },
+    { name: 'Room4', playerCount: 4, maxPlayers: 4, createdAt: Date.now() - 240000 },
+    { name: 'Tetris_club', playerCount: 1, maxPlayers: 4, createdAt: Date.now() - 300000 },
+    { name: 'Room6', playerCount: 2, maxPlayers: 4, createdAt: Date.now() - 360000 },
 ];
 
 const regex: RegExp = /^[a-zA-Z0-9_]+$/;
@@ -134,7 +136,7 @@ function joinRoom(targetRoom: string): void {
                 {/if}
 
                 {#if listRooms.length > 0}
-                    <ul class="space-y-3">
+                    <ul class="space-y-3" class:room-list-scroll={listRooms.length > 3}>
                         {#each listRooms as room}
                             <li class="flex justify-between items-center bg-slate-800/60 p-3 rounded-lg border border-slate-700 hover:border-slate-500 transition-colors">
                                 <div>
@@ -207,6 +209,12 @@ function joinRoom(targetRoom: string): void {
     .arcade-input:focus {
         box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.1);
         @apply ring-cyan-500/50;
+    }
+
+    .room-list-scroll {
+        @apply max-h-56 overflow-y-auto pr-2;
+        scrollbar-width: thin;
+        scrollbar-color: rgb(34 211 238 / 0.5) transparent;
     }
 
     .arcade-btn {
