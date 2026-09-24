@@ -43,4 +43,6 @@ https://excalidraw.com/#json=VW6odnKOXzNvXVvvdje-D,wZBOWPiye1_8r4WbTMHtug
 
 Using last version of node(25.9.0) and npm(11.12.1).
 Using nvm to manage versions on 42 sessions.
-Run as dev : `npm run dev`
+Run as dev (two terminals):
+- Backend: `cd server && npm install && npm run dev` (port 3000)
+- Frontend: `cd client && npm install && npm run dev` (port 5173)

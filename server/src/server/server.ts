@@ -11,8 +11,8 @@ const gameManager: GameManager = new GameManager(server);
 const roomManager: RoomManager = new RoomManager(server);
 const handlerFactory: HandlerFactory = new HandlerFactory(server, roomManager, gameManager);
 
-const __filename: string = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname: string = path.dirname(__filename); // get the name of the directory
+const __filename: string = fileURLToPath(import.meta.url);
+const __dirname: string = path.dirname(__filename);
 server.register(import('@fastify/static'), {
   root: path.join(__dirname, '../front'),
 });
@@ -44,6 +44,6 @@ server.ready().then(() => {
   });
 });
 
-start('localhost', 3000);
+start('127.0.0.1', 3000);
 
 export {server, gameManager, roomManager};
