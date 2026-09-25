@@ -109,10 +109,6 @@ class Player {
         }
     }
 
-    public checkLost(): boolean {
-        return false;
-    }
-
     private moveDownAllPieces(row: number) {
         for (let i: number = row * 10; i < row * 10 + 10; i++) {
             this.board[i] = Color.Empty;
