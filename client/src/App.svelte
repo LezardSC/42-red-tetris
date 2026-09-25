@@ -1,7 +1,7 @@
 <script lang="ts">
   import './main.css';
 
-  import { onMount } from 'svelte';
+  import { onDestroy } from 'svelte';
   import {Route} from 'tinro';
   import { connect, disconnect } from './lib/socket.svelte';
 
@@ -12,10 +12,8 @@
   import Header from './lib/Header.svelte';
   import TetrisBackground from './lib/TetrisBackground.svelte';
 
-  onMount(() => {
-    connect();
-    return disconnect;
-  });
+  connect();
+  onDestroy(disconnect);
 </script>
 
 <Header />
