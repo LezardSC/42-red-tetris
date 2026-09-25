@@ -13,7 +13,7 @@ class Player {
     rightKey: boolean = false;
     upKey: boolean = false;
     downKey: boolean = false;
-    pieceDownEmitter: EventEmitter = new EventEmitter();
+    playerEmitter: EventEmitter = new EventEmitter();
     
     public constructor(playerId: string, boardSize: [number, number], firstPiece: string | undefined) {
         this.playerId = playerId;
@@ -38,7 +38,7 @@ class Player {
                     this.board[tileAbsolute.x + tileAbsolute.y * 10] = this.piece.color;
                 }
             }
-            this.pieceDownEmitter.emit('piecedown', this.piece.id);
+            this.playerEmitter.emit('piecedown', this.piece.id);
         }
     }
 
@@ -68,9 +68,12 @@ class Player {
                 }
                 if (j == this.boardSize[0] - 1) {
                     deletedRows++;
-                    this.moveDownAllPieces(i);
+                    this.deleteRow(i);
                 }
             }
+        }
+        if (deletedRows > 1) {
+            this.playerEmitter.emit('deletedrows', this.playerId)
         }
         return deletedRows;
     }
@@ -109,7 +112,20 @@ class Player {
         }
     }
 
-    private moveDownAllPieces(row: number) {
+    public addIdleRow() {
+        for (let i: number = 0; i < this.board.length - 10; i++) {
+            let color = this.board[i + 10];
+            if (color == null)
+                continue;
+            this.board[i] = color;
+        }
+
+        for (let i: number = this.board.length - 11; i < this.board.length ; i++) {
+            this.board[i] = Color.Idle;
+        }
+    }
+
+    private deleteRow(row: number) {
         for (let i: number = row * 10; i < row * 10 + 10; i++) {
             this.board[i] = Color.Empty;
         }
