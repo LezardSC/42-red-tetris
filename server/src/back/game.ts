@@ -91,7 +91,7 @@ class Game {
             this.players.push([id, new Player(id, [10, 20], this.pieceManager.nextPieces[0])])
         });
         this.players.forEach((player) => player[1].pieceDownEmitter.on('piecedown', (id) => {
-            if (player[1].checkLost())
+            if (player[1].lost)
                 return;
             if (id === this.pieceManager.nextPieces.length - 1)
                 this.pieceManager.generateNewSet();
@@ -123,7 +123,7 @@ class Game {
     
     private async startEmissionLoop(timer: number) {
         while (!this.gameEnded) {
-            if (!this.players.every(p => p[1].lost))
+            if (this.players.length - this.players.filter(p => p[1].lost).length <= 1 || (this.players.length == 1 && this.players.every(p => p[1].lost)))
                 this.gameEnded = true;
             let status: GameStatus = {time: this.time, players: this.players};
             this.gameStatusEmitter.emit('status', status);
