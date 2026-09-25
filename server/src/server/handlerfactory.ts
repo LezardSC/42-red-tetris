@@ -7,6 +7,7 @@ import type UserManager from '../back/user.ts';
 
 class HandlerFactory {
     regex: RegExp = /^[a-zA-Z0-9_]+$/;
+    maxNameLength: number = 16;
     server!: FastifyInstance;
     roomManager!: RoomManager;
     gameManager!: GameManager;
@@ -26,13 +27,29 @@ class HandlerFactory {
             if (roomId) {
               this.server.socketIO.to(roomId).emit("roomstatus", this.roomManager.getRoomStatus(roomId))
             }
-            // Manage disconnection during game here
+            this.userManager.removeUser(socket.id);
+            this.server.log.info(`Removed user ${socket.id}.`);
         }
     }
 
     public createPlayerNameHandler(socket: Socket) {
-        return (name: string) => {
-            this.userManager.addUser(socket.id, name);
+        return (name: any, ack?: (error: string) => void) => {
+          const reply = typeof ack === "function" ? ack : () => {};
+
+          if (typeof name !== "string" || !this.regex.test(name) || name.length > this.maxNameLength) {
+            this.server.log.info(`Invalid player name from ${socket.id}.`);
+            reply(`Username must be 1 to ${this.maxNameLength} letters, numbers or underscores.`);
+            return;
+          }
+
+          if (!this.roomManager.checkAvailable(socket.id)) {
+            reply('Cannot change username while in a room.');
+            return;
+          }
+
+          this.userManager.addUser(socket.id, name);
+          this.server.log.info(`Socket ${socket.id} is now ${name}.`);
+          reply('');
         }
     }
     
@@ -42,7 +59,12 @@ class HandlerFactory {
           this.server.log.info("Invalid room name.");
           return;
         }
-    
+
+        if (this.userManager.getUserName(socket.id) === undefined) {
+          this.server.log.info(`Socket ${socket.id} has no username and cannot join a room.`);
+          return;
+        }
+
         if (!this.roomManager.checkAvailable(socket.id)) {
           return;
         }

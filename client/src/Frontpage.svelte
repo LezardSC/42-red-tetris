@@ -1,5 +1,6 @@
 <script lang="ts">
 import { router } from 'tinro';
+import { player, registerUsername } from './lib/socket.svelte';
 
 type Room = {
     name: string;
@@ -20,7 +21,8 @@ const mockRooms: Room[] = [
 const regex: RegExp = /^[a-zA-Z0-9_]+$/;
 
 let usernameInput: string = $state('');
-let username: string = $state('');
+const username: string = $derived(player.name);
+let registering: boolean = $state(false);
 let roomName: string = $state('');
 
 const errors = $state({
@@ -50,9 +52,11 @@ function validateUsername(name: string): boolean {
     return true;
 }
 
-function setUsername(name: string): void {
+async function setUsername(name: string): Promise<void> {
     if (!validateUsername(name)) return;
-    username = name;
+    registering = true;
+    errors.username = await registerUsername(name);
+    registering = false;
 }
 
 function validateRoomName(name: string): boolean {
@@ -102,11 +106,12 @@ function joinRoom(targetRoom: string): void {
                     type="text" 
                     bind:value={usernameInput} 
                     oninput={() => errors.username = ''} 
-                    placeholder="Enter Username" 
+                    placeholder="Enter Username"
+                    maxlength="16" 
                     disabled={!!username}
                     class="arcade-input flex-1"
                 />
-                <button class="arcade-btn btn-cyan" onclick={() => setUsername(usernameInput)}>
+                <button class="arcade-btn btn-cyan" disabled={registering} onclick={() => setUsername(usernameInput)}>
                     Confirm
                 </button>
             </div>
@@ -116,7 +121,7 @@ function joinRoom(targetRoom: string): void {
         {:else}
             <div class="flex items-center justify-between bg-slate-950/50 p-4 rounded-lg border border-slate-700/50">
                 <p class="text-lg">Playing as <strong class="text-cyan-400 font-bold tracking-wider">{username}</strong></p>
-                <button class="arcade-btn btn-red text-sm py-2 px-4" onclick={() => username = ''}>
+                <button class="arcade-btn btn-red text-sm py-2 px-4" onclick={() => player.name = ''}>
                     Change
                 </button>
             </div>
