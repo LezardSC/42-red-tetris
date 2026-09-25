@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify"
-import { EventEmitter } from "events";
-import { userManager } from "../server/server.ts";
+import { userManager, gameManager } from "../server/server.ts";
 
 
 class RoomManager {
@@ -9,6 +8,7 @@ class RoomManager {
 
     public constructor(server: FastifyInstance) {
         this.server = server;
+        gameManager.gameStatusEmitter.on('gameend', gameid => this.end(gameid));
     }
 
     public create(host: string, roomId: string): boolean {
@@ -86,8 +86,24 @@ class RoomManager {
             return true;
         }
         catch (error){
-            this.server.log.info(`Player ${playerId} failed to join room ${roomId} because ${error}.`);
+            this.server.log.info(`Player ${playerId} failed to start game in room ${roomId} because ${error}.`);
             return false;
+        }
+    }
+
+    public end(roomId: string) {
+        try {
+            const roomTuple = this.rooms.find(([id]) => id === roomId);
+                
+            if (!roomTuple) {
+                throw new Error('Room was not found.');
+            }
+
+            roomTuple[1].end()
+
+        }
+        catch (error) {
+            this.server.log.info(`Failed to end game in room ${roomId} because ${error}.`);
         }
     }
 
@@ -97,10 +113,10 @@ class RoomManager {
                 room.removePlayer(playerId);
 
                 if (room.players.length === 0) {
-                    this.delete(room.name);
+                    this.delete(room.id);
                     return null;
                 } else {
-                    return room.name;
+                    return room.id;
                 }
             }
         }
@@ -142,10 +158,11 @@ class RoomManager {
             this.server.log.info(`Room ${roomId} was not found`);
 
             return {
-                name: '',
+                id: '',
                 host: '',
                 players: [],
-                maxPlayers: -1
+                maxPlayers: -1,
+                gameOngoing: false
             }
         }
         return roomTuple[1].getStatus();
@@ -174,13 +191,14 @@ class RoomManager {
 }
 
 class Room {
-    name!: string;
+    id!: string;
     host!: string | undefined;
     players: Array<string> = [];
     maxPlayers: number = 4;
+    gameOngoing: boolean = false;
 
     public constructor(host: string, roomId: string) {
-        this.name = roomId;
+        this.id = roomId;
         this.host = host;
         this.players.push(host);
     }
@@ -201,7 +219,7 @@ class Room {
             this.players.splice(index, 1);
         }
         else {
-            throw new Error(`Failed to remove player ${playerId} from room ${this.name} because it wasn't found.`)
+            throw new Error(`Failed to remove player ${playerId} from room ${this.id} because it wasn't found.`)
         }
 
         if (playerId === this.host) {
@@ -213,8 +231,16 @@ class Room {
 
     public start(playerId: string) {
         if (!(playerId === this.host)) {
-            throw new Error(`Failed to start game in room ${this.name} because player ${playerId} is not the host. Host is ${this.host}.`)
+            throw new Error(`Failed to start game in room ${this.id} because player ${playerId} is not the host. Host is ${this.host}.`)
         }
+        if (this.gameOngoing) {
+            throw new Error(`Failed to start game in room ${this.id} because the game is ongoing`)
+        }
+        this.gameOngoing = true;
+    }
+
+    public end() {
+        this.gameOngoing = false;
     }
 
     public getStatus(): RoomStatus {
@@ -224,20 +250,22 @@ class Room {
         )
 
         return {
-            name: this.name,
+            id: this.id,
             host: userManager.getUserName(this.host),
             players: players,
-            maxPlayers: this.maxPlayers
+            maxPlayers: this.maxPlayers,
+            gameOngoing: this.gameOngoing
         }
     }
 
 }
 
 type RoomStatus = {
-    name: string,
+    id: string,
     host: string | undefined,
     players: Array<string | undefined>,
-    maxPlayers: number
+    maxPlayers: number,
+    gameOngoing: boolean
 }
 
 

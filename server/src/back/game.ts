@@ -6,6 +6,7 @@ import { Piece, PieceManager } from "./piece.ts";
 class GameManager {
     server!: FastifyInstance;
     games: Array<[string, Game]> = [];
+    gameStatusEmitter: EventEmitter = new EventEmitter();
 
     public constructor(server: FastifyInstance) {
         this.server = server;
@@ -58,6 +59,7 @@ class GameManager {
             if (!gameTuple || index === -1) {
                 throw new Error(`Game was not found.`);
             }
+            this.gameStatusEmitter.emit('gameend', gameId);
             gameTuple[1].gameStatusEmitter.off('status', (status) => this.sendGameStatus(gameId, status));
             gameTuple[1].gameStatusEmitter.off('gameend', () => this.gameEnded(gameId));
             this.games.splice(index, 1);
@@ -76,8 +78,9 @@ class GameManager {
 
 class Game {
     gameId!: string;
+    gameEnded: boolean = false;
     time: number = 0;
-    players: Array<[string, Player]> = []
+    players: Array<[string, Player]> = [];
     pieceManager!: PieceManager;
     gameStatusEmitter: EventEmitter = new EventEmitter();
 
@@ -88,6 +91,8 @@ class Game {
             this.players.push([id, new Player(id, [10, 20], this.pieceManager.nextPieces[0])])
         });
         this.players.forEach((player) => player[1].pieceDownEmitter.on('piecedown', (id) => {
+            if (player[1].checkLost())
+                return;
             if (id === this.pieceManager.nextPieces.length - 1)
                 this.pieceManager.generateNewSet();
             player[1].piece = new Piece(4, 1, this.pieceManager.nextPieces[id + 1], id + 1)
@@ -117,7 +122,9 @@ class Game {
     }
     
     private async startEmissionLoop(timer: number) {
-        while (true) {
+        while (!this.gameEnded) {
+            if (!this.players.every(p => p[1].lost))
+                this.gameEnded = true;
             let status: GameStatus = {time: this.time, players: this.players};
             this.gameStatusEmitter.emit('status', status);
             await new Promise(resolve => setTimeout(resolve, timer));
@@ -126,7 +133,7 @@ class Game {
     }
     
     private async startMainGameLoop(timer: number) {
-        while (true) {
+        while (!this.gameEnded) {
             //TODO: start chrono then update then sleep rest of time
             this.time++;
             this.players.forEach(player => {
@@ -139,7 +146,7 @@ class Game {
 
     //TODO: Pourrait etre chez le player pour prendre en compte le keydown
     private async startMoveGameLoop(timer: number) {
-        while (true) {
+        while (!this.gameEnded) {
             this.players.forEach(player => {
                 player[1].move();
             });
