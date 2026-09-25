@@ -28,6 +28,7 @@ export type GameStatus = {
 let socket: Socket | null = null;
 
 export const connection = $state({ connected: false, id: '' });
+export const player = $state({ name: '' });
 
 export function getSocket(): Socket | null {
     return socket;
@@ -43,6 +44,11 @@ export function connect(): Socket {
     s.on('connect', () => {
         connection.connected = true;
         connection.id = s.id ?? '';
+        if (player.name) {
+            registerUsername(player.name).then(error => {
+                if (error) player.name = '';
+            });
+        }
     });
 
     s.on('disconnect', () => {
@@ -54,6 +60,18 @@ export function connect(): Socket {
 
     socket = s;
     return socket;
+}
+
+export async function registerUsername(name: string): Promise<string> {
+    if (!socket || !socket.connected) return 'Not connected to the server.';
+    try {
+        const error: string = await socket.timeout(5000).emitWithAck('playername', name);
+        if (error) return error;
+    } catch {
+        return 'The server did not answer. Please try again.';
+    }
+    player.name = name;
+    return '';
 }
 
 export function disconnect(): void {
