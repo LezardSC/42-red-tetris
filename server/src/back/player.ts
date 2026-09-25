@@ -73,7 +73,7 @@ class Player {
             }
         }
         if (deletedRows > 1) {
-            this.playerEmitter.emit('deletedrows', this.playerId)
+            this.playerEmitter.emit('deletedrows', this.playerId, deletedRows)
         }
         return deletedRows;
     }
@@ -112,17 +112,19 @@ class Player {
         }
     }
 
-    public addIdleRow() {
-        for (let i: number = 0; i < this.board.length - 10; i++) {
-            let color = this.board[i + 10];
+    public addIdleRows(nb: number) {
+        for (let i: number = 0; i < this.board.length - 10 * nb; i++) {
+            let color = this.board[i + 10 * nb];
             if (color == null)
                 continue;
             this.board[i] = color;
         }
 
-        for (let i: number = this.board.length - 11; i < this.board.length ; i++) {
+        for (let i: number = this.board.length - 10 * nb; i < this.board.length ; i++) {
             this.board[i] = Color.Idle;
         }
+
+        this.piece.center.y = Math.max(this.piece.center.y - nb, this.piece.startPos.y);
     }
 
     private deleteRow(row: number) {

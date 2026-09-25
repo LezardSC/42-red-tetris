@@ -99,9 +99,9 @@ class Game {
             player[1].piece = new Piece(4, 1, this.pieceManager.nextPieces[id + 1], id + 1)
         }));
 
-        this.players.forEach((player) => player[1].playerEmitter.on('deletedrows', (id) => {
+        this.players.forEach((player) => player[1].playerEmitter.on('deletedrows', (id, nb) => {
             this.players.filter(playerTuple => playerTuple[1].playerId != id).forEach(playerTuple =>{
-                playerTuple[1].addIdleRow();
+                playerTuple[1].addIdleRows(nb - 1);
             })
         }));
         
@@ -110,7 +110,7 @@ class Game {
     public start() {
         this.startEmissionLoop(10);
         this.startMainGameLoop(150);
-        this.startMoveGameLoop(100);
+        // this.startMoveGameLoop(100);
     }
 
     public keyPressed(playerId: string, key: string) {
@@ -146,6 +146,7 @@ class Game {
             //TODO: start chrono then update then sleep rest of time
             this.time++;
             this.players.forEach(player => {
+                player[1].move();
                 player[1].moveDown();
                 player[1].checkCompletedRows();
             });
@@ -153,15 +154,14 @@ class Game {
         }
     }
 
-    //TODO: Pourrait etre chez le player pour prendre en compte le keydown
-    private async startMoveGameLoop(timer: number) {
-        while (!this.gameEnded) {
-            this.players.forEach(player => {
-                player[1].move();
-            });
-            await new Promise(resolve => setTimeout(resolve, timer));
-        }
-    }
+    // private async startMoveGameLoop(timer: number) {
+    //     while (!this.gameEnded) {
+    //         this.players.forEach(player => {
+    //             player[1].move();
+    //         });
+    //         await new Promise(resolve => setTimeout(resolve, timer));
+    //     }
+    // }
 
 }
 
