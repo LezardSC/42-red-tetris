@@ -14,7 +14,7 @@ class RoomManager {
     public create(host: string, roomId: string): boolean {
         this.rooms.push([roomId, new Room(host, roomId)]);
         this.server.log.info(`Created room ${roomId} with host ${host}.`);
-        this.server.socketIO.emit('rooms', this.rooms)
+        this.server.socketIO.emit('rooms', this.getAllRoomStatus())
         return true;
     }
 
@@ -24,7 +24,7 @@ class RoomManager {
         if (index !== -1) {
             this.rooms.splice(index, 1);
             this.server.log.info(`Deleted room ${roomId}}.`);
-            this.server.socketIO.emit('rooms', this.rooms)
+            this.server.socketIO.emit('rooms', this.getAllRoomStatus())
             return true;
         } 
         else {
@@ -122,6 +122,16 @@ class RoomManager {
         if (!result) {
             this.server.log.info(`Player ${playerId} is not available.`);
         }
+        return result;
+    }
+
+    public getAllRoomStatus(): Array<RoomStatus> {
+        let result: Array<RoomStatus> = []
+
+        this.rooms.forEach(roomTuple => {
+            result.push(roomTuple[1].getStatus())
+        })
+
         return result;
     }
 
