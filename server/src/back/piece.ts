@@ -163,7 +163,9 @@ class Coordinates {
     public rotate(angle: number) {
         let angleRad: number = angle * Math.PI / 180; 
         let newX: number = this.x * Math.cos(angleRad) + this.y * Math.sin(angleRad);
+        newX = Math.round(newX * 10) / 10
         let newY: number = this.y * Math.cos(angleRad) - this.x * Math.sin(angleRad);
+        newY = Math.round(newY * 10) / 10
         this.x = newX;
         this.y = newY;
     }
