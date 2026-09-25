@@ -20,6 +20,7 @@ class PieceManager {
 
 class Piece {
     center!: Coordinates;
+    startPos!: Coordinates;
     type!: string;
     tiles: Array<Coordinates> = [];
     color!: Array<number>;
@@ -36,6 +37,7 @@ class Piece {
             y += 0.5;
         }
         this.center = new Coordinates(x, y);
+        this.startPos = new Coordinates(x, y);
         this.type = type;
         this.setTiles(type);
         this.setColor(type);
