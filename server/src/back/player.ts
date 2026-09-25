@@ -8,13 +8,13 @@ class Player {
     piece!: Piece;
     boardSize!: [number, number];
     board!: Array<Array<number>>;
+    lost: boolean = false; 
     leftKey: boolean = false;
     rightKey: boolean = false;
     upKey: boolean = false;
     downKey: boolean = false;
     pieceDownEmitter: EventEmitter = new EventEmitter();
     
-
     public constructor(playerId: string, boardSize: [number, number], firstPiece: string | undefined) {
         this.playerId = playerId;
         this.playerName = userManager.getUserName(playerId);
@@ -68,7 +68,7 @@ class Player {
                 }
                 if (j == this.boardSize[0] - 1) {
                     deletedRows++;
-                    this.moveDownPieces(i);
+                    this.moveDownAllPieces(i);
                 }
             }
         }
@@ -109,7 +109,7 @@ class Player {
         }
     }
 
-    private moveDownPieces(row: number) {
+    private moveDownAllPieces(row: number) {
         for (let i: number = row * 10; i < row * 10 + 10; i++) {
             this.board[i] = Color.Empty;
         }
@@ -142,10 +142,9 @@ class Player {
             }
 
             
-            if (this.board[tileAbsolute.x + tileAbsolute.y * 10] != Color.Empty ||
-                tileAbsolute.x > this.boardSize[0] - 1 ||
-                tileAbsolute.x < 0 ||
-                tileAbsolute.y > this.boardSize[1] - 1) {
+            if (this.board[tileAbsolute.x + tileAbsolute.y * 10] != Color.Empty || tileAbsolute.x > this.boardSize[0] - 1 || tileAbsolute.x < 0 || tileAbsolute.y > this.boardSize[1] - 1) {
+                if (this.piece.startPos.equals(this.piece.center))
+                    this.lost = true;
                 return true;
             }
 
