@@ -123,7 +123,8 @@ class Game {
     
     private async startEmissionLoop(timer: number) {
         while (!this.gameEnded) {
-            if (this.players.length - this.players.filter(p => p[1].lost).length <= 1 || (this.players.length == 1 && this.players.every(p => p[1].lost)))
+            if ((this.players.length > 1 && this.players.length - this.players.filter(p => p[1].lost).length <= 1) 
+                || (this.players.length == 1 && this.players.every(p => p[1].lost)))
                 this.gameEnded = true;
             let status: GameStatus = {time: this.time, players: this.players};
             this.gameStatusEmitter.emit('status', status);
