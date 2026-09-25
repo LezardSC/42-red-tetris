@@ -6,7 +6,7 @@ import { Piece, PieceManager } from "./piece.ts";
 class GameManager {
     server!: FastifyInstance;
     games: Array<[string, Game]> = [];
-    gameStatusEmitter: EventEmitter = new EventEmitter();
+    gameManagerEmitter: EventEmitter = new EventEmitter();
 
     public constructor(server: FastifyInstance) {
         this.server = server;
@@ -14,8 +14,8 @@ class GameManager {
 
     public startGame(gameId: string, playersId: Array<string>) {
         let game: Game = new Game(gameId, playersId);
-        game.gameStatusEmitter.on('status', (status) => this.sendGameStatus(gameId, status));
-        game.gameStatusEmitter.on('gameend', () => this.gameEnded(gameId));
+        game.gameEmitter.on('status', (status) => this.sendGameStatus(gameId, status));
+        game.gameEmitter.on('gameend', () => this.gameEnded(gameId));
         this.games.push([gameId, game]);
         game.start();
     }
@@ -59,9 +59,9 @@ class GameManager {
             if (!gameTuple || index === -1) {
                 throw new Error(`Game was not found.`);
             }
-            this.gameStatusEmitter.emit('gameend', gameId);
-            gameTuple[1].gameStatusEmitter.off('status', (status) => this.sendGameStatus(gameId, status));
-            gameTuple[1].gameStatusEmitter.off('gameend', () => this.gameEnded(gameId));
+            this.gameManagerEmitter.emit('gameend', gameId);
+            gameTuple[1].gameEmitter.off('status', (status) => this.sendGameStatus(gameId, status));
+            gameTuple[1].gameEmitter.off('gameend', () => this.gameEnded(gameId));
             this.games.splice(index, 1);
             this.server.log.info(`Game ${gameId} was deleted.`)
         }
@@ -82,7 +82,7 @@ class Game {
     time: number = 0;
     players: Array<[string, Player]> = [];
     pieceManager!: PieceManager;
-    gameStatusEmitter: EventEmitter = new EventEmitter();
+    gameEmitter: EventEmitter = new EventEmitter();
 
     public constructor(gameId: string, playersId: Array<string>) {
         this.gameId = gameId;
@@ -90,13 +90,21 @@ class Game {
         playersId.forEach(id => {
             this.players.push([id, new Player(id, [10, 20], this.pieceManager.nextPieces[0])])
         });
-        this.players.forEach((player) => player[1].pieceDownEmitter.on('piecedown', (id) => {
+
+        this.players.forEach((player) => player[1].playerEmitter.on('piecedown', (id) => {
             if (player[1].lost)
                 return;
             if (id === this.pieceManager.nextPieces.length - 1)
                 this.pieceManager.generateNewSet();
             player[1].piece = new Piece(4, 1, this.pieceManager.nextPieces[id + 1], id + 1)
-        }))
+        }));
+
+        this.players.forEach((player) => player[1].playerEmitter.on('deletedrows', (id) => {
+            this.players.filter(playerTuple => playerTuple[1].playerId != id).forEach(playerTuple =>{
+                playerTuple[1].addIdleRow();
+            })
+        }));
+        
     }
 
     public start() {
@@ -127,10 +135,10 @@ class Game {
                 || (this.players.length == 1 && this.players.every(p => p[1].lost)))
                 this.gameEnded = true;
             let status: GameStatus = {time: this.time, players: this.players};
-            this.gameStatusEmitter.emit('status', status);
+            this.gameEmitter.emit('status', status);
             await new Promise(resolve => setTimeout(resolve, timer));
         }
-        this.gameStatusEmitter.emit('gameend');
+        this.gameEmitter.emit('gameend');
     }
     
     private async startMainGameLoop(timer: number) {
