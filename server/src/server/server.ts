@@ -43,7 +43,7 @@ server.ready().then(() => {
     socket.on('keyup', handlerFactory.createKeyReleasedHandler(socket));
     
     server.log.info(`Socket ${socket.id} connected.`);
-    socket.emit('rooms', roomManager.rooms);
+    socket.emit('rooms', roomManager.getAllRoomStatus());
     socket.emit('handshake');
   });
 });
