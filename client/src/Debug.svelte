@@ -1,14 +1,11 @@
 <script lang="ts">
-import { onDestroy } from 'svelte';
-import type { Socket } from 'socket.io-client';
-import { connect, disconnect, getSocket, type GameStatus, type RoomStatus } from './lib/socket';
+import { onMount } from 'svelte';
+import { connection, getSocket, type GameStatus, type RoomStatus } from './lib/socket.svelte';
 
 const TILE = 50;
 const COLS = 10;
 const MAX_LOG = 30;
 
-let connected: boolean = $state(false);
-let socketId: string = $state('');
 let roomId: string = $state('A');
 let roomStatus: RoomStatus | null = $state(null);
 let gameTime: number | null = $state(null);
@@ -20,47 +17,41 @@ function addLog(line: string): void {
     log = [`${new Date().toLocaleTimeString()}  ${line}`, ...log].slice(0, MAX_LOG);
 }
 
-/*------On socket opening-------*/
+onMount(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handlers = {
+        disconnect: (reason: string) => {
+            roomStatus = null;
+            gameTime = null;
+            addLog(`disconnected: ${reason}`);
+        },
+        connect_error: (err: Error) => addLog(`connect_error: ${err.message}`),
+        handshake: () => addLog(`handshake, socket ${socket.id}`),
+        roomstatus: (status: RoomStatus) => {
+            roomStatus = status;
+            addLog(`roomstatus: ${status.name}, host ${status.host}, ${status.players.length}/${status.maxPlayers} players`);
+        },
+        gamestarting: () => addLog('gamestarting'),
+        gamestatus: (status: GameStatus) => {
+            gameTime = status.time;
+            draw(status);
+        },
+    };
+
+    for (const [event, handler] of Object.entries(handlers)) socket.on(event, handler);
+    return () => {
+        for (const [event, handler] of Object.entries(handlers)) socket.off(event, handler);
+    };
+});
+
 function onConnect(): void {
-    if (getSocket()) {
-        addLog('This client already possesses a socket.');
-        return;
-    }
-    const socket: Socket = connect();
-
-    socket.on('connect', () => {
-        connected = true;
-        socketId = socket.id ?? '';
-    });
-
-    socket.on('disconnect', (reason) => {
-        connected = false;
-        addLog(`disconnected: ${reason}`);
-    });
-
-    socket.on('connect_error', (err) => addLog(`connect_error: ${err.message}`));
-
-    socket.on('handshake', () => addLog(`handshake, socket ${socket.id}`));
-
-    socket.on('roomstatus', (status: RoomStatus) => {
-        roomStatus = status;
-        addLog(`roomstatus: ${status.name}, host ${status.host}, ${status.players.length}/${status.maxPlayers} players`);
-    });
-
-    socket.on('gamestarting', () => addLog('gamestarting'));
-
-    socket.on('gamestatus', (status: GameStatus) => {
-        gameTime = status.time;
-        draw(status);
-    });
+    getSocket()?.connect();
 }
 
 function onDisconnect(): void {
-    disconnect();
-    connected = false;
-    socketId = '';
-    roomStatus = null;
-    gameTime = null;
+    getSocket()?.disconnect();
 }
 
 /*------Room tests-------*/
@@ -97,12 +88,10 @@ function draw(status: GameStatus): void {
 function onKey(type: 'keydown' | 'keyup', event: KeyboardEvent): void {
     const socket = getSocket();
     // Don't steal keys while typing the room name
-    if (!socket || event.target instanceof HTMLInputElement) return;
+    if (!socket || !connection.connected || event.target instanceof HTMLInputElement) return;
     if (event.key.startsWith('Arrow') || event.key === ' ') event.preventDefault();
     socket.emit(type, event.key);
 }
-
-onDestroy(onDisconnect);
 </script>
 
 <svelte:window onkeydown={e => onKey('keydown', e)} onkeyup={e => onKey('keyup', e)} />
@@ -112,15 +101,15 @@ onDestroy(onDisconnect);
         <section class="glass-panel flex flex-col gap-4">
             <h2 class="arcade-heading text-cyan-400 m-0">Socket</h2>
             <p class="text-sm text-slate-400">
-                {#if connected}
-                    Connected as <span class="text-cyan-400 break-all">{socketId}</span>
+                {#if connection.connected}
+                    Connected as <span class="text-cyan-400 break-all">{connection.id}</span>
                 {:else}
                     Disconnected
                 {/if}
             </p>
             <div class="flex gap-3">
-                <button class="arcade-btn btn-cyan" onclick={onConnect} disabled={connected}>Connect</button>
-                <button class="arcade-btn btn-red" onclick={onDisconnect} disabled={!connected}>Disconnect</button>
+                <button class="arcade-btn btn-cyan" onclick={onConnect} disabled={connection.connected}>Connect</button>
+                <button class="arcade-btn btn-red" onclick={onDisconnect} disabled={!connection.connected}>Disconnect</button>
             </div>
         </section>
 
@@ -128,9 +117,9 @@ onDestroy(onDisconnect);
             <h2 class="arcade-heading text-red-400 m-0">Room</h2>
             <input type="text" bind:value={roomId} class="arcade-input" placeholder="Room name" />
             <div class="flex gap-3 flex-wrap">
-                <button class="arcade-btn btn-cyan" onclick={() => emit('join', roomId)} disabled={!connected}>Join</button>
-                <button class="arcade-btn btn-red" onclick={() => emit('leave')} disabled={!connected}>Leave</button>
-                <button class="arcade-btn btn-cyan" onclick={() => emit('start')} disabled={!connected}>Start</button>
+                <button class="arcade-btn btn-cyan" onclick={() => emit('join', roomId)} disabled={!connection.connected}>Join</button>
+                <button class="arcade-btn btn-red" onclick={() => emit('leave')} disabled={!connection.connected}>Leave</button>
+                <button class="arcade-btn btn-cyan" onclick={() => emit('start')} disabled={!connection.connected}>Start</button>
             </div>
             {#if roomStatus}
                 <div class="text-sm text-slate-400 flex flex-col gap-1">
@@ -140,7 +129,7 @@ onDestroy(onDisconnect);
                             <li class="break-all">
                                 {player}
                                 {#if player === roomStatus.host}<span class="text-amber-400">(host)</span>{/if}
-                                {#if player === socketId}<span class="text-cyan-400">(you)</span>{/if}
+                                {#if player === connection.id}<span class="text-cyan-400">(you)</span>{/if}
                             </li>
                         {/each}
                     </ul>
