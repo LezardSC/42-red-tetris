@@ -8,7 +8,7 @@ class RoomManager {
 
     public constructor(server: FastifyInstance) {
         this.server = server;
-        gameManager.gameStatusEmitter.on('gameend', gameid => this.end(gameid));
+        gameManager.gameManagerEmitter.on('gameend', gameid => this.end(gameid));
     }
 
     public create(host: string, roomId: string): boolean {
