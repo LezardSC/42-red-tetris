@@ -1,22 +1,6 @@
 <script lang="ts">
 import { router } from 'tinro';
-import { player, registerUsername } from './lib/socket.svelte';
-
-type Room = {
-    name: string;
-    playerCount: number;
-    maxPlayers: number;
-    createdAt: number;
-};
-
-const mockRooms: Room[] = [
-    { name: 'Room1', playerCount: 2, maxPlayers: 4, createdAt: Date.now() - 60000 },
-    { name: 'Hyper_zone', playerCount: 1, maxPlayers: 4, createdAt: Date.now() - 120000 },
-    { name: 'yomama', playerCount: 3, maxPlayers: 4, createdAt: Date.now() - 180000 },
-    { name: 'Room4', playerCount: 4, maxPlayers: 4, createdAt: Date.now() - 240000 },
-    { name: 'Tetris_club', playerCount: 1, maxPlayers: 4, createdAt: Date.now() - 300000 },
-    { name: 'Room6', playerCount: 2, maxPlayers: 4, createdAt: Date.now() - 360000 },
-];
+import { lobby, player, registerUsername, type RoomStatus } from './lib/socket.svelte';
 
 const regex: RegExp = /^[a-zA-Z0-9_]+$/;
 
@@ -30,10 +14,10 @@ const errors = $state({
     createRoom: '',
 });
 
-const listRooms: Room[] = $derived(
-    mockRooms
-        .filter(room => room.playerCount < room.maxPlayers)
-        .sort((a, b) => b.createdAt - a.createdAt)
+const listRooms: RoomStatus[] = $derived(
+    lobby.rooms
+        .filter(room => room.players.length < room.maxPlayers && !room.gameOngoing)
+        .toReversed()
 );
 
 function validateUsername(name: string): boolean {
@@ -142,17 +126,17 @@ function joinRoom(targetRoom: string): void {
 
                 {#if listRooms.length > 0}
                     <ul class="space-y-3" class:room-list-scroll={listRooms.length > 3}>
-                        {#each listRooms as room}
+                        {#each listRooms as room (room.id)}
                             <li class="flex justify-between items-center bg-slate-800/60 p-3 rounded-lg border border-slate-700 hover:border-slate-500 transition-colors">
                                 <div>
-                                    <span class="font-bold text-slate-100">{room.name}</span>
-                                    <span class="text-xs text-slate-400 block">Players: {room.playerCount}/{room.maxPlayers}</span>
+                                    <span class="font-bold text-slate-100">{room.id}</span>
+                                    <span class="text-xs text-slate-400 block">Players: {room.players.length}/{room.maxPlayers}</span>
                                 </div>
                                 <button
                                     class="arcade-btn btn-cyan py-1 px-3 text-sm"
                                     disabled={!username}
                                     title={!username ? 'Please enter a username to join' : ''}
-                                    onclick={() => joinRoom(room.name)}
+                                    onclick={() => joinRoom(room.id)}
                                 >
                                     Join
                                 </button>
