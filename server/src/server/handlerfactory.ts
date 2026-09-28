@@ -54,22 +54,28 @@ class HandlerFactory {
     }
     
     public createJoinHandler(socket: Socket) {
-      return (roomId: any) => {
+      return (roomId: any, ack?: (error: string) => void) => {
+        const reply = typeof ack === "function" ? ack : () => {};
+
         if (typeof roomId !== "string" || !this.regex.test(roomId)) {
           this.server.log.info("Invalid room name.");
+          reply('Room name can only contain letters, numbers and underscores.');
           return;
         }
 
         if (this.userManager.getUserName(socket.id) === undefined) {
           this.server.log.info(`Socket ${socket.id} has no username and cannot join a room.`);
+          reply('Please choose a username first.');
           return;
         }
 
         if (!this.roomManager.checkAvailable(socket.id)) {
+          reply('You are already in a room.');
           return;
         }
 
         if (this.gameManager.checkGameOngoing(roomId)) {
+          reply('A game is in progress in this room. Try again after it ends.');
           return;
         }
     
@@ -84,7 +90,10 @@ class HandlerFactory {
         if (joined) {
           socket.join(roomId);
     
+          reply('');
           this.server.socketIO.to(roomId).emit("roomstatus", this.roomManager.getRoomStatus(roomId));
+        } else {
+          reply('This room is full.');
         }
       };
     }

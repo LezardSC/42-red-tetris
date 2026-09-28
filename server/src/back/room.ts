@@ -43,6 +43,7 @@ class RoomManager {
             
             roomTuple[1].addPlayer(playerId);
             this.server.log.info(`${playerId} joined room ${roomId}.`);
+            this.server.socketIO.emit('rooms', this.getAllRoomStatus())
             return true;
         }
         catch (error){
@@ -63,6 +64,8 @@ class RoomManager {
             this.server.log.info(`${playerId} left room ${roomId}.`);
             if (roomTuple[1].players.length === 0) {
                 this.delete(roomId);
+            } else {
+                this.server.socketIO.emit('rooms', this.getAllRoomStatus())
             }
 
             return true;
@@ -116,6 +119,7 @@ class RoomManager {
                     this.delete(room.id);
                     return null;
                 } else {
+                    this.server.socketIO.emit('rooms', this.getAllRoomStatus())
                     return room.id;
                 }
             }
