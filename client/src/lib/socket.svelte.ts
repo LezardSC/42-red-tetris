@@ -3,7 +3,6 @@ import { io, type Socket } from 'socket.io-client';
 type Rgb = [number, number, number];
 type Coordinates = { x: number; y: number };
 
-// Shape of the server's `rooms` (array) and `roomstatus` events. Players and host are names.
 export type RoomStatus = {
     id: string;
     host: string | undefined;
