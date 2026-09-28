@@ -31,7 +31,7 @@ onMount(() => {
         handshake: () => addLog(`handshake, socket ${socket.id}`),
         roomstatus: (status: RoomStatus) => {
             roomStatus = status;
-            addLog(`roomstatus: ${status.name}, host ${status.host}, ${status.players.length}/${status.maxPlayers} players`);
+            addLog(`roomstatus: ${status.id}, host ${status.host}, ${status.players.length}/${status.maxPlayers} players`);
         },
         gamestarting: () => addLog('gamestarting'),
         gamestatus: (status: GameStatus) => {
@@ -123,7 +123,7 @@ function onKey(type: 'keydown' | 'keyup', event: KeyboardEvent): void {
             </div>
             {#if roomStatus}
                 <div class="text-sm text-slate-400 flex flex-col gap-1">
-                    <p>Room <span class="text-slate-100">{roomStatus.name}</span> · {roomStatus.players.length}/{roomStatus.maxPlayers}</p>
+                    <p>Room <span class="text-slate-100">{roomStatus.id}</span> · {roomStatus.players.length}/{roomStatus.maxPlayers}</p>
                     <ul>
                         {#each roomStatus.players as player (player)}
                             <li class="break-all">
