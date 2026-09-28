@@ -1,7 +1,16 @@
 <script lang="ts">
+import { onDestroy } from 'svelte';
 import { router } from 'tinro';
 import Game from './Game.svelte';
 import GameOver from './GameOver.svelte';
+import {
+    connection,
+    joinRoom,
+    leaveRoom,
+    player,
+    registerUsername,
+    room as currentRoom,
+} from './lib/socket.svelte';
 
 type Player = {
     name: string;
@@ -19,28 +28,6 @@ type RoomStatus = {
 let { room, username }: { room: string; username: string } = $props();
 
 const regex: RegExp = /^[a-zA-Z0-9_]+$/;
-const MAX_PLAYERS = 4;
-
-// MOCK: players already present in the rooms listed on the front page.
-// To be replaced by the `room:status` event once the socket is wired.
-const mockRoomPlayers: Record<string, string[]> = {
-    Room1: ['alice', 'bob'],
-    Hyper_zone: ['neo'],
-    yomama: ['kevin', 'sarah', 'tom'],
-};
-
-function mockJoin(roomName: string, playerName: string): RoomStatus {
-    const others = (mockRoomPlayers[roomName] ?? []).filter(name => name !== playerName);
-    const names = [...others, playerName];
-
-    return {
-        name: roomName,
-        host: names[0],
-        players: names.map(name => ({ name, alive: true })),
-        max: MAX_PLAYERS,
-        inGame: false,
-    };
-}
 
 function validateParams(roomName: string, playerName: string): string {
     if (!regex.test(roomName)) return 'Invalid room name: only letters, numbers, and underscores are allowed.';
@@ -59,9 +46,43 @@ let phase: Phase = $state('lobby');
 // Payload of `game:over`: last player alive, or null.
 let winner: string | null = $state(null);
 
-const error: string = $derived(validateParams(room, username));
-// MOCK: `inGame` follows the local phase until the server's `room:status` does it.
-const status: RoomStatus | null = $derived(error ? null : { ...mockJoin(room, username), inGame: phase !== 'lobby' });
+const paramError: string = $derived(validateParams(room, username));
+let joinError: string = $state('');
+let joining: boolean = false;
+
+const error: string = $derived(paramError || joinError);
+
+async function enterRoom(roomName: string, playerName: string): Promise<void> {
+    joining = true;
+    leaveRoom();
+    if (player.name !== playerName) {
+        joinError = await registerUsername(playerName);
+    }
+    if (!joinError) {
+        joinError = await joinRoom(roomName);
+    }
+    joining = false;
+}
+
+$effect(() => {
+    if (paramError || joinError || joining || !connection.connected || currentRoom.id === room) return;
+    enterRoom(room, username);
+});
+
+onDestroy(leaveRoom);
+
+// MOCK: `inGame` follows the local phase until the game is wired.
+const status: RoomStatus | null = $derived(
+    currentRoom.status && {
+        name: currentRoom.status.id,
+        host: currentRoom.status.host ?? '',
+        players: currentRoom.status.players
+            .filter((name): name is string => name !== undefined)
+            .map(name => ({ name, alive: true })),
+        max: currentRoom.status.maxPlayers,
+        inGame: phase !== 'lobby',
+    }
+);
 const isHost: boolean = $derived(status?.host === username);
 
 function startGame(): void {
@@ -81,24 +102,28 @@ function backToRoom(): void {
     phase = 'lobby';
 }
 
-function leaveRoom(): void {
-    // TODO: emit `room:leave` once the socket is wired.
+function quitRoom(): void {
+    leaveRoom();
     router.goto('/');
 }
 </script>
 
 <main class="{phase !== 'lobby' ?'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 pb-12 flex flex-col gap-8 text-slate-200 relative z-10">
 
-    {#if error || !status}
+    {#if error}
         <section class="glass-panel flex flex-col items-center gap-6 text-center">
             <h2 class="arcade-heading text-red-400 m-0">Cannot join room</h2>
             <p class="text-slate-400">{error}</p>
-            <button class="arcade-btn btn-cyan" onclick={leaveRoom}>Back to home</button>
+            <button class="arcade-btn btn-cyan" onclick={quitRoom}>Back to home</button>
+        </section>
+    {:else if !status}
+        <section class="glass-panel flex flex-col items-center gap-6 text-center">
+            <p class="text-slate-400">Joining <strong class="text-cyan-400">{room}</strong><span class="dots"></span></p>
         </section>
     {:else if phase !== 'lobby'}
-        <Game {username} players={status.players} onLeave={leaveRoom} onGameOver={endGame} />
+        <Game {username} players={status.players} onLeave={quitRoom} onGameOver={endGame} />
         {#if phase === 'finished'}
-            <GameOver {username} {winner} solo={status.players.length === 1} onReplay={backToRoom} onQuit={leaveRoom} />
+            <GameOver {username} {winner} solo={status.players.length === 1} onReplay={backToRoom} onQuit={quitRoom} />
         {/if}
     {:else}
         <section class="glass-panel flex flex-col gap-6">
@@ -144,7 +169,7 @@ function leaveRoom(): void {
                     You are the host. Start the game when everyone is ready.
                 </p>
                 <div class="flex gap-3">
-                    <button class="arcade-btn btn-red" onclick={leaveRoom}>Leave</button>
+                    <button class="arcade-btn btn-red" onclick={quitRoom}>Leave</button>
                     <button class="arcade-btn btn-cyan" onclick={startGame}>Start game</button>
                 </div>
             {:else}
@@ -152,7 +177,7 @@ function leaveRoom(): void {
                     Waiting for <strong class="text-amber-400">{status.host}</strong> to start the game<span class="dots"></span>
                 </p>
                 <div class="flex gap-3">
-                    <button class="arcade-btn btn-red" onclick={leaveRoom}>Leave</button>
+                    <button class="arcade-btn btn-red" onclick={quitRoom}>Leave</button>
                     <!-- MOCK: stands in for the host starting the game from another client -->
                     <button class="arcade-btn btn-cyan" onclick={startGame}>[mock] Host starts</button>
                 </div>
