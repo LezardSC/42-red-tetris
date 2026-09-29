@@ -32,6 +32,11 @@ export const connection = $state({ connected: false, id: '' });
 export const player = $state({ name: '' });
 export const lobby = $state({ rooms: [] as RoomStatus[] });
 export const room = $state({ id: '', status: null as RoomStatus | null });
+export const game = $state({
+    solo: false,
+    lost: [] as string[],
+    result: null as { winner: string | null } | null,
+});
 
 export function getSocket(): Socket | null {
     return socket;
@@ -69,6 +74,21 @@ export function connect(): Socket {
         room.status = status;
     });
 
+    s.on('gamestarting', () => {
+        // Nobody can join once the game starts, so the current player count is the round's.
+        game.solo = room.status?.players.length === 1;
+        game.lost = [];
+        game.result = null;
+    });
+
+    s.on('playerlost', ({ name }: { name: string | null }) => {
+        if (name && !game.lost.includes(name)) game.lost = [...game.lost, name];
+    });
+
+    s.on('gameend', ({ winner }: { winner: string | null }) => {
+        game.result = { winner };
+    });
+
     s.on('connect_error', (err) => console.warn(`connect_error: ${err.message}`));
 
     socket = s;
@@ -100,6 +120,20 @@ export async function joinRoom(roomId: string): Promise<string> {
     return error;
 }
 
+// MOCK: ask the server to make us top out / make every opponent top out, until the
+// game itself is wired. The server answers with the real `playerlost` / `gameend`.
+export function mockTopOut(): void {
+    socket?.emit('mocklose');
+}
+
+export function mockWin(): void {
+    socket?.emit('mockwin');
+}
+
+export function startGame(): void {
+    socket?.emit('start');
+}
+
 export function leaveRoom(): void {
     if (!room.id) return;
     socket?.emit('leave');
@@ -109,6 +143,8 @@ export function leaveRoom(): void {
 function resetRoom(): void {
     room.id = '';
     room.status = null;
+    game.lost = [];
+    game.result = null;
 }
 
 export function disconnect(): void {
