@@ -65,9 +65,8 @@ class HandlerFactory {
 
         if (this.userManager.getUserName(socket.id) === undefined) {
           this.server.log.info(`Socket ${socket.id} has no username and cannot join a room.`);
-          this.userManager.addUser(socket.id, "TestName");
           reply('Please choose a username first.');
-          // return;
+          return;
         }
 
         if (!this.roomManager.checkAvailable(socket.id)) {
