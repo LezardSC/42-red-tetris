@@ -1,18 +1,18 @@
 <script lang="ts">
+import { mockTopOut, mockWin } from './lib/socket.svelte';
+
 type Player = { name: string; alive: boolean };
 // 'X' = indestructible penalty line, '.' = empty
 type Cell = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L' | 'X' | '.';
 
-let { username, players, onLeave, onGameOver }: {
+let { username, players, onLeave }: {
     username: string;
     players: Player[];
     onLeave: () => void;
-    onGameOver: (winner: string | null) => void;
 } = $props();
 
 const ROWS = 20;
 
-// Same neon palette as the background animation
 const COLORS: Record<Cell, string | null> = {
     I: '#00FFFF',
     J: '#0066FF',
@@ -59,26 +59,16 @@ function spectrumCells(spectrum: number[]): boolean[] {
     return Array.from({ length: ROWS }, (_, r) => r).flatMap(r => spectrum.map(height => ROWS - r <= height));
 }
 
-// MOCK: with 2+ opponents, the last one is shown as knocked out.
+// MOCK: spectrums until `game:state` carries them.
 const opponents = $derived(
     players
         .filter(player => player.name !== username)
-        .map((player, i, others) => ({
+        .map((player, i) => ({
             name: player.name,
-            alive: others.length < 2 || i < others.length - 1,
+            alive: player.alive,
             spectrum: MOCK_SPECTRUMS[i % MOCK_SPECTRUMS.length],
         })),
 );
-
-// MOCK: stand-ins for the server's `game:over`. Topping out hands the win
-// to the first opponent still alive (none in solo).
-function mockWin(): void {
-    onGameOver(username);
-}
-
-function mockTopOut(): void {
-    onGameOver(opponents.find(opponent => opponent.alive)?.name ?? null);
-}
 </script>
 
 <div class="flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-center">
@@ -209,6 +199,10 @@ function mockTopOut(): void {
         @apply absolute inset-0 flex items-center justify-center text-red-400 text-sm;
     }
 
+    .mock-btn {
+        @apply text-xs text-slate-400 bg-slate-800/60 border border-dashed border-slate-600 rounded px-2 py-1 hover:text-slate-200 hover:border-slate-400;
+    }
+
     .arcade-btn {
         @apply font-bold rounded-lg px-6 py-3 transition-all duration-200 border;
         font-family: system-ui, sans-serif;
@@ -222,7 +216,4 @@ function mockTopOut(): void {
         @apply border-red-400 bg-red-950 shadow-[0_0_15px_rgba(255,0,51,0.3)];
     }
 
-    .mock-btn {
-        @apply text-xs text-slate-400 bg-slate-800/60 border border-dashed border-slate-600 rounded px-2 py-1 hover:text-slate-200 hover:border-slate-400;
-    }
 </style>

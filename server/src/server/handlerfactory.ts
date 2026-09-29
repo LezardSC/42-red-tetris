@@ -19,10 +19,24 @@ class HandlerFactory {
         this.roomManager = roomManager;
         this.userManager = userManager;
     }
+
+    public registerGameEvents() {
+        this.gameManager.gameManagerEmitter.on('playerlost', (gameId: string, playerId: string) => {
+          this.server.socketIO.to(gameId).emit('playerlost', { name: this.userManager.getUserName(playerId) ?? null });
+        });
+        // RoomManager's own 'gameend' listener runs first, so the room is already unlocked here.
+        this.gameManager.gameManagerEmitter.on('gameend', (gameId: string, winnerId: string | null) => {
+          this.server.socketIO.to(gameId).emit('gameend', { winner: this.userManager.getUserName(winnerId ?? undefined) ?? null });
+          if (this.roomManager.roomExists(gameId)) {
+            this.server.socketIO.to(gameId).emit('roomstatus', this.roomManager.getRoomStatus(gameId));
+          }
+        });
+    }
     
     public createDisconnectHandler(socket: Socket) {
         return (reason: string) => {
             this.server.log.info(`Socket ${socket.id} disconnected. Reason: ${reason}`);
+            this.gameManager.removePlayer(socket.id);
             let roomId: string | null = this.roomManager.remove(socket.id);
             if (roomId) {
               this.server.socketIO.to(roomId).emit("roomstatus", this.roomManager.getRoomStatus(roomId))
@@ -107,6 +121,7 @@ class HandlerFactory {
             return;
           }
     
+          this.gameManager.removePlayer(socket.id);
           let left: boolean = this.roomManager.leave(socket.id, roomId);
           if (left) {
             this.server.socketIO.to(roomId).emit('roomstatus', this.roomManager.getRoomStatus(roomId));
@@ -127,12 +142,26 @@ class HandlerFactory {
           let start: boolean = this.roomManager.start(socket.id, roomId);
           if (start) {
             this.server.socketIO.to(roomId).emit('gamestarting');
+            this.server.socketIO.to(roomId).emit('roomstatus', this.roomManager.getRoomStatus(roomId));
             let players: Array<string> | null = this.roomManager.getRoomPlayers(roomId);
             if (players) {
               this.gameManager.startGame(roomId, players);
             }
           }
         }
+    }
+
+    // MOCK: stand-ins for topping out / winning until the client can play. Remove before evaluation.
+    public createMockLoseHandler(socket: Socket) {
+      return () => {
+        this.gameManager.removePlayer(socket.id);
+      }
+    }
+
+    public createMockWinHandler(socket: Socket) {
+      return () => {
+        this.gameManager.forceWin(socket.id);
+      }
     }
 
     public createKeyPressedHandler(socket: Socket) {

@@ -5,11 +5,13 @@ import Game from './Game.svelte';
 import GameOver from './GameOver.svelte';
 import {
     connection,
+    game,
     joinRoom,
     leaveRoom,
     player,
     registerUsername,
     room as currentRoom,
+    startGame,
 } from './lib/socket.svelte';
 
 type Player = {
@@ -39,12 +41,12 @@ function emptySlots(status: RoomStatus): number[] {
     return Array.from({ length: Math.max(status.max - status.players.length, 0) }, (_, i) => i);
 }
 
-// lobby → playing (`game:start`) → finished (`game:over`) → lobby (Back to room)
-type Phase = 'lobby' | 'playing' | 'finished';
+type Outcome = 'victory' | 'defeat' | 'solo';
 
-let phase: Phase = $state('lobby');
-// Payload of `game:over`: last player alive, or null.
-let winner: string | null = $state(null);
+function outcomeOf(name: string, winnerName: string | null, isSolo: boolean): Outcome {
+    if (isSolo) return 'solo';
+    return winnerName === name ? 'victory' : 'defeat';
+}
 
 const paramError: string = $derived(validateParams(room, username));
 let joinError: string = $state('');
@@ -71,36 +73,26 @@ $effect(() => {
 
 onDestroy(leaveRoom);
 
-// MOCK: `inGame` follows the local phase until the game is wired.
 const status: RoomStatus | null = $derived(
     currentRoom.status && {
         name: currentRoom.status.id,
         host: currentRoom.status.host ?? '',
         players: currentRoom.status.players
             .filter((name): name is string => name !== undefined)
-            .map(name => ({ name, alive: true })),
+            .map(name => ({ name, alive: !game.lost.includes(name) })),
         max: currentRoom.status.maxPlayers,
-        inGame: phase !== 'lobby',
+        inGame: currentRoom.status.gameOngoing,
     }
 );
 const isHost: boolean = $derived(status?.host === username);
+const isOut: boolean = $derived(game.lost.includes(username));
+const outcome: Outcome | null = $derived(game.result && outcomeOf(username, game.result.winner, game.solo));
 
-function startGame(): void {
-    // TODO: emit `game:start` once the socket is wired.
-    console.log(`[mock] ${username} starts the game in room ${room}`);
-    winner = null;
-    phase = 'playing';
-}
-
-// TODO: call from the `game:over` listener once the socket is wired.
-function endGame(winnerName: string | null): void {
-    winner = winnerName;
-    phase = 'finished';
-}
-
-function backToRoom(): void {
-    phase = 'lobby';
-}
+const RESULT_TITLES: Record<Outcome, string> = {
+    victory: 'Victory!',
+    defeat: 'Defeat',
+    solo: 'Game over',
+};
 
 function quitRoom(): void {
     leaveRoom();
@@ -108,7 +100,7 @@ function quitRoom(): void {
 }
 </script>
 
-<main class="{phase !== 'lobby' ?'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 pb-12 flex flex-col gap-8 text-slate-200 relative z-10">
+<main class="{status?.inGame ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-4 pb-12 flex flex-col gap-8 text-slate-200 relative z-10">
 
     {#if error}
         <section class="glass-panel flex flex-col items-center gap-6 text-center">
@@ -120,12 +112,28 @@ function quitRoom(): void {
         <section class="glass-panel flex flex-col items-center gap-6 text-center">
             <p class="text-slate-400">Joining <strong class="text-cyan-400">{room}</strong><span class="dots"></span></p>
         </section>
-    {:else if phase !== 'lobby'}
-        <Game {username} players={status.players} onLeave={quitRoom} onGameOver={endGame} />
-        {#if phase === 'finished'}
-            <GameOver {username} {winner} solo={status.players.length === 1} onReplay={backToRoom} onQuit={quitRoom} />
+    {:else if status.inGame}
+        <Game {username} players={status.players} onLeave={quitRoom} />
+        {#if isOut}
+            <GameOver onQuit={quitRoom} />
         {/if}
     {:else}
+        {#if game.result && outcome}
+            <section class="glass-panel result-banner {outcome} flex flex-col sm:flex-row items-center justify-between gap-2">
+                <h2 class="arcade-heading m-0">{RESULT_TITLES[outcome]}</h2>
+                <p class="text-slate-300">
+                    {#if outcome === 'victory'}
+                        You were the last one standing.
+                    {:else if outcome === 'solo'}
+                        The stack reached the top.
+                    {:else if game.result.winner}
+                        <strong class="text-amber-400">{game.result.winner}</strong> won the last round.
+                    {:else}
+                        Nobody survived the last round.
+                    {/if}
+                </p>
+            </section>
+        {/if}
         <section class="glass-panel flex flex-col gap-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -178,8 +186,6 @@ function quitRoom(): void {
                 </p>
                 <div class="flex gap-3">
                     <button class="arcade-btn btn-red" onclick={quitRoom}>Leave</button>
-                    <!-- MOCK: stands in for the host starting the game from another client -->
-                    <button class="arcade-btn btn-cyan" onclick={startGame}>[mock] Host starts</button>
                 </div>
             {/if}
         </section>
@@ -198,6 +204,19 @@ function quitRoom(): void {
 
     .glass-panel {
         @apply bg-slate-900/80 border border-slate-700/60 rounded-2xl p-6 md:p-8 backdrop-blur-md shadow-xl;
+    }
+
+    .result-banner {
+        @apply py-4 md:py-5;
+    }
+    .victory {
+        @apply border-amber-400/60 text-amber-400;
+    }
+    .defeat {
+        @apply border-red-500/60 text-red-400;
+    }
+    .solo {
+        @apply border-cyan-500/60 text-cyan-400;
     }
 
     .host-badge {
