@@ -1,17 +1,14 @@
 <script lang="ts">
-import { mockTopOut, mockWin } from './lib/socket.svelte';
+import { connection, game, sendKey, type PlayerState } from './lib/socket.svelte';
+import { EMPTY_CELLS, boardCells, spectrum, spectrumCells, type Cell } from './lib/board';
 
 type Player = { name: string; alive: boolean };
-// 'X' = indestructible penalty line, '.' = empty
-type Cell = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L' | 'X' | '.';
 
 let { username, players, onLeave }: {
     username: string;
     players: Player[];
     onLeave: () => void;
 } = $props();
-
-const ROWS = 20;
 
 const COLORS: Record<Cell, string | null> = {
     I: '#00FFFF',
@@ -25,57 +22,47 @@ const COLORS: Record<Cell, string | null> = {
     '.': null,
 };
 
-// MOCK: static snapshot of the board (falling T included) and next piece,
-// to be replaced by `game:state` once the socket is wired.
-const MOCK_BOARD: string[] = [
-    '..........',
-    '..........',
-    '....T.....',
-    '...TTT....',
-    ...Array(9).fill('..........'),
-    '.........I',
-    '.T.......I',
-    'TTT....ZZI',
-    'LJJ.OO.SZZ',
-    'LJ..OOSSLI',
-    'LLJJ.TTLLI',
-    'XXXXXXXXXX',
-];
-const MOCK_NEXT: string[] = ['....', 'IIII', '....', '....'];
+const GAME_KEYS: string[] = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '];
 
-// MOCK: opponents' spectrums (height of each column).
-const MOCK_SPECTRUMS: number[][] = [
-    [3, 4, 4, 6, 7, 5, 5, 2, 3, 4],
-    [8, 9, 11, 10, 9, 12, 13, 12, 10, 9],
-    [15, 17, 16, 18, 19, 18, 17, 16, 18, 17],
-];
+const alive: boolean = $derived(players.find(player => player.name === username)?.alive ?? false);
+const statePlayers: PlayerState[] = $derived(game.state?.players.map(([, state]) => state) ?? []);
+const me: PlayerState | undefined = $derived(game.state?.players.find(([id]) => id === connection.id)?.[1]);
+const cells: Cell[] = $derived(me ? boardCells(me.board, me.lost ? null : me.piece) : EMPTY_CELLS);
 
-function toCells(rows: string[]): Cell[] {
-    return rows.flatMap(row => [...row] as Cell[]);
-}
-
-// A cell (row r, column c) is filled when it is within the column's height.
-function spectrumCells(spectrum: number[]): boolean[] {
-    return Array.from({ length: ROWS }, (_, r) => r).flatMap(r => spectrum.map(height => ROWS - r <= height));
-}
-
-// MOCK: spectrums until `game:state` carries them.
 const opponents = $derived(
     players
         .filter(player => player.name !== username)
-        .map((player, i) => ({
+        .map(player => ({
             name: player.name,
             alive: player.alive,
-            spectrum: MOCK_SPECTRUMS[i % MOCK_SPECTRUMS.length],
+            spectrum: spectrum(statePlayers.find(state => state.playerName === player.name)?.board ?? []),
         })),
 );
+
+function onKeyDown(event: KeyboardEvent): void {
+    if (!GAME_KEYS.includes(event.key)) return;
+    event.preventDefault();
+    if (!event.repeat && alive) sendKey('keydown', event.key);
+}
+
+function onKeyUp(event: KeyboardEvent): void {
+    if (!GAME_KEYS.includes(event.key)) return;
+    event.preventDefault();
+    sendKey('keyup', event.key);
+}
+
+function releaseKeys(): void {
+    GAME_KEYS.forEach(key => sendKey('keyup', key));
+}
 </script>
+
+<svelte:window onkeydown={onKeyDown} onkeyup={onKeyUp} onblur={releaseKeys} />
 
 <div class="flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-center">
 
     <section class="glass-panel flex flex-col sm:flex-row gap-6 items-center sm:items-start">
         <div class="board own-board">
-            {#each toCells(MOCK_BOARD) as cell, i (i)}
+            {#each cells as cell, i (i)}
                 <div class="cell" class:block={cell !== '.'} style:--c={COLORS[cell]}></div>
             {/each}
         </div>
@@ -86,22 +73,8 @@ const opponents = $derived(
                 <p class="font-bold text-cyan-400 break-all">{username}</p>
             </div>
 
-            <div class="flex flex-col gap-2">
-                <p class="side-label">Next</p>
-                <div class="board preview">
-                    {#each toCells(MOCK_NEXT) as cell, i (i)}
-                        <div class:block={cell !== '.'} style:--c={COLORS[cell]}></div>
-                    {/each}
-                </div>
-            </div>
-
             <div class="flex flex-col gap-2 self-start">
                 <button class="arcade-btn btn-red" onclick={onLeave}>Leave</button>
-                <!-- MOCK: stand in for the server ending the game -->
-                {#if opponents.length > 0}
-                    <button class="mock-btn" onclick={mockWin}>[mock] Win</button>
-                {/if}
-                <button class="mock-btn" onclick={mockTopOut}>[mock] Top out</button>
             </div>
         </aside>
     </section>
@@ -165,11 +138,6 @@ const opponents = $derived(
         @apply p-1 bg-slate-950/80 border border-slate-700 rounded shadow-[0_0_25px_rgba(0,255,255,0.15)];
     }
 
-    .preview {
-        --cols: 4;
-        --cell: 1rem;
-    }
-
     .mini-board {
         --cols: 10;
         --cell: 0.5rem;
@@ -197,10 +165,6 @@ const opponents = $derived(
     .ko-badge {
         font-family: 'Press Start 2P', system-ui, sans-serif;
         @apply absolute inset-0 flex items-center justify-center text-red-400 text-sm;
-    }
-
-    .mock-btn {
-        @apply text-xs text-slate-400 bg-slate-800/60 border border-dashed border-slate-600 rounded px-2 py-1 hover:text-slate-200 hover:border-slate-400;
     }
 
     .arcade-btn {
