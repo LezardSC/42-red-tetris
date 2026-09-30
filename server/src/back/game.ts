@@ -1,93 +1,8 @@
 import { EventEmitter } from "events";
-import type { FastifyInstance } from "fastify";
 import Player from "./player.ts";
 import { Piece, PieceManager } from "./piece.ts";
+import UserManager from "./user-manager.ts";
 
-class GameManager {
-    server!: FastifyInstance;
-    games: Array<[string, Game]> = [];
-    gameManagerEmitter: EventEmitter = new EventEmitter();
-
-    public constructor(server: FastifyInstance) {
-        this.server = server;
-    }
-
-    public startGame(gameId: string, playersId: Array<string>) {
-        let game: Game = new Game(gameId, playersId);
-        game.gameEmitter.on('status', (status) => this.sendGameStatus(gameId, status));
-        game.gameEmitter.on('playerlost', (playerId) => this.gameManagerEmitter.emit('playerlost', gameId, playerId));
-        game.gameEmitter.on('gameend', (winnerId) => this.gameEnded(gameId, winnerId));
-        this.games.push([gameId, game]);
-        game.start();
-    }
-
-    public checkGameOngoing(gameId: string): boolean {
-        const result: boolean = !this.games.every(([id]) => id !== gameId)
-
-        if (result) {
-            this.server.log.info(`Game with id ${gameId} is already ongoing.`)
-        }
-
-        return result
-    }
-
-    public keyPressed(playerId: string, key: string) {
-        for (let i: number = 0; i < this.games.length; i++) {
-            const gameTuple = this.games[i];
-            if (!gameTuple) {
-                return;
-            }
-
-            gameTuple[1].keyPressed(playerId, key);
-        }
-    }
-
-    public keyReleased(playerId: string, key: string) {
-        for (let i: number = 0; i < this.games.length; i++) {
-            const gameTuple = this.games[i];
-            if (!gameTuple) {
-                return;
-            }
-
-            gameTuple[1].keyReleased(playerId, key);
-        }
-    }
-
-    public removePlayer(playerId: string) {
-        this.games.forEach(([, game]) => game.forfeit(playerId));
-    }
-
-    // MOCK: makes every opponent of playerId lose, until the game itself is playable.
-    public forceWin(playerId: string) {
-        this.games.forEach(([, game]) => {
-            if (game.players.some(([id]) => id == playerId)) {
-                game.players.filter(([id]) => id != playerId).forEach(([id]) => game.forfeit(id));
-            }
-        });
-    }
-
-    private gameEnded(gameId: string, winnerId: string | null) {
-        try {
-            const index = this.games.findIndex(([id]) => id === gameId);
-            const gameTuple = this.games.find(([id]) => id === gameId);
-            if (!gameTuple || index === -1) {
-                throw new Error(`Game was not found.`);
-            }
-            gameTuple[1].gameEmitter.removeAllListeners();
-            this.games.splice(index, 1);
-            this.gameManagerEmitter.emit('gameend', gameId, winnerId);
-            this.server.log.info(`Game ${gameId} was deleted.`)
-        }
-        catch (error) {
-            this.server.log.info(`Game ${gameId} could not be deleted because ${error}.`)
-        }
-    }
-
-    private sendGameStatus(gameId: string, status: GameStatus) {
-        this.server.socketIO.to(gameId).emit('gamestatus', status)
-    }
-
-}
 
 class Game {
     gameId!: string;
@@ -97,11 +12,11 @@ class Game {
     pieceManager!: PieceManager;
     gameEmitter: EventEmitter = new EventEmitter();
 
-    public constructor(gameId: string, playersId: Array<string>) {
+    public constructor(userManager: UserManager, gameId: string, playersId: Array<string>) {
         this.gameId = gameId;
         this.pieceManager = new PieceManager();
         playersId.forEach(id => {
-            this.players.push([id, new Player(id, [10, 20], this.pieceManager.nextPieces[0])])
+            this.players.push([id, new Player(userManager.getUserName(id), id, [10, 20], this.pieceManager.nextPieces[0])])
         });
 
         this.players.forEach((player) => player[1].playerEmitter.on('piecedown', (id) => {
@@ -201,4 +116,5 @@ type GameStatus = {
     players: Array<[string, Player]>
 }
 
-export default GameManager
+export default Game
+export type { GameStatus }
