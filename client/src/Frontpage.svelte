@@ -1,5 +1,5 @@
 <script lang="ts">
-import { router } from 'tinro';
+import { goto } from './lib/router.svelte';
 import { lobby, player, registerUsername, resetUsername, type RoomStatus } from './lib/socket.svelte';
 import { nameError } from './lib/validation';
 
@@ -32,7 +32,7 @@ function createRoom(targetRoom: string): void {
     if (errors.createRoom) return;
 
     if (username) {
-        router.goto(`/${targetRoom}/${username}`);
+        goto(`/${targetRoom}/${username}`);
     } else {
         errors.createRoom = 'Please enter a username before creating a room.';
     }
@@ -43,7 +43,7 @@ function joinRoom(targetRoom: string): void {
         errors.createRoom = 'Please enter a username before joining a room.';
         return;
     }
-    router.goto(`/${targetRoom}/${username}`);
+    goto(`/${targetRoom}/${username}`);
 }
 </script>
 
