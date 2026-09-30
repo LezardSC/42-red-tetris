@@ -136,4 +136,156 @@ describe("GameManager", () => {
             expect(listener).toHaveBeenCalledWith("game-1");
         });
     });
+    describe("keyPressed", () => {
+        it("should forward the key press to every game", () => {
+            manager.startGame(
+                userManager,
+                "game-1",
+                ["player-1"],
+            );
+
+            manager.startGame(
+                userManager,
+                "game-2",
+                ["player-2"],
+            );
+
+            const game1 = manager.games[0]?.[1];
+            const game2 = manager.games[1]?.[1];
+
+            expect(game1).toBeDefined();
+            expect(game2).toBeDefined();
+
+            const game1Spy = vi.spyOn(game1!, "keyPressed");
+            const game2Spy = vi.spyOn(game2!, "keyPressed");
+
+            manager.keyPressed("player-1", "ArrowLeft");
+
+            expect(game1Spy).toHaveBeenCalledWith(
+                "player-1",
+                "ArrowLeft",
+            );
+
+            expect(game2Spy).toHaveBeenCalledWith(
+                "player-1",
+                "ArrowLeft",
+            );
+        });
+    });
+
+    describe("keyReleased", () => {
+        it("should forward the key release to every game", () => {
+            manager.startGame(
+                userManager,
+                "game-1",
+                ["player-1"],
+            );
+
+            manager.startGame(
+                userManager,
+                "game-2",
+                ["player-2"],
+            );
+
+            const game1 = manager.games[0]?.[1];
+            const game2 = manager.games[1]?.[1];
+
+            expect(game1).toBeDefined();
+            expect(game2).toBeDefined();
+
+            const game1Spy = vi.spyOn(game1!, "keyReleased");
+            const game2Spy = vi.spyOn(game2!, "keyReleased");
+
+            manager.keyReleased("player-1", "ArrowRight");
+
+            expect(game1Spy).toHaveBeenCalledWith(
+                "player-1",
+                "ArrowRight",
+            );
+
+            expect(game2Spy).toHaveBeenCalledWith(
+                "player-1",
+                "ArrowRight",
+            );
+        });
+    });
+
+    describe("removePlayer", () => {
+        it("should forfeit the player in every game", () => {
+            manager.startGame(
+                userManager,
+                "game-1",
+                ["player-1"],
+            );
+
+            manager.startGame(
+                userManager,
+                "game-2",
+                ["player-1"],
+            );
+
+            const game1 = manager.games[0]?.[1];
+            const game2 = manager.games[1]?.[1];
+
+            expect(game1).toBeDefined();
+            expect(game2).toBeDefined();
+
+            const game1Spy = vi.spyOn(game1!, "forfeit");
+            const game2Spy = vi.spyOn(game2!, "forfeit");
+
+            manager.removePlayer("player-1");
+
+            expect(game1Spy).toHaveBeenCalledWith("player-1");
+            expect(game2Spy).toHaveBeenCalledWith("player-1");
+        });
+    });
+
+    describe("forceWin", () => {
+        it("should forfeit every opponent of the player", () => {
+            manager.startGame(
+                userManager,
+                "game-1",
+                [
+                    "player-1",
+                    "player-2",
+                    "player-3",
+                ],
+            );
+
+            const game = manager.games[0]?.[1];
+
+            expect(game).toBeDefined();
+
+            const forfeitSpy = vi.spyOn(game!, "forfeit");
+
+            manager.forceWin("player-1");
+
+            expect(forfeitSpy).toHaveBeenCalledWith("player-2");
+            expect(forfeitSpy).toHaveBeenCalledWith("player-3");
+
+            expect(forfeitSpy).not.toHaveBeenCalledWith("player-1");
+        });
+
+        it("should do nothing when the player is not in the game", () => {
+            manager.startGame(
+                userManager,
+                "game-1",
+                [
+                    "player-1",
+                    "player-2",
+                ],
+            );
+
+            const game = manager.games[0]?.[1];
+
+            expect(game).toBeDefined();
+
+            const forfeitSpy = vi.spyOn(game!, "forfeit");
+
+            manager.forceWin("player-3");
+
+            expect(forfeitSpy).not.toHaveBeenCalled();
+        });
+    });
+
 });
