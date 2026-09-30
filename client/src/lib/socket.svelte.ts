@@ -9,18 +9,19 @@ export type RoomStatus = {
     gameOngoing: boolean;
 };
 
-// The fields of the server's `Player` objects that the client uses.
-export type PlayerState = {
-    playerId: string;
-    playerName?: string;
+export type OpponentStatus = {
+    name: string;
+    spectrum: number[];
+    alive: boolean;
+};
+
+// `gamestatus`: the player's own board and piece, and only the spectrum of each opponent.
+export type GameStatus = {
+    time: number;
     board: Rgb[];
     piece: ServerPiece;
     lost: boolean;
-};
-
-export type GameStatus = {
-    time: number;
-    players: [string, PlayerState][];
+    opponents: OpponentStatus[];
 };
 
 let socket: Socket | null = null;
