@@ -1,8 +1,8 @@
 import type { Socket } from 'socket.io';
 import type { FastifyInstance } from 'fastify';
-import type RoomManager from '../back/room.ts';
-import type GameManager from '../back/game.ts';
-import type UserManager from '../back/user.ts';
+import type RoomManager from '../back/room-manager.ts';
+import type GameManager from '../back/game-manager.ts';
+import type UserManager from '../back/user-manager.ts';
 
 
 class HandlerFactory {
@@ -129,7 +129,7 @@ class HandlerFactory {
             this.server.socketIO.to(roomId).emit('gamestarting');
             let players: Array<string> | null = this.roomManager.getRoomPlayers(roomId);
             if (players) {
-              this.gameManager.startGame(roomId, players);
+              this.gameManager.startGame(this.userManager, roomId, players);
             }
           }
         }

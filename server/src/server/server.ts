@@ -2,15 +2,15 @@ import Fastify, { type FastifyInstance } from 'fastify'
 import path from 'node:path'
 import { fileURLToPath } from 'url';
 import socketIO from './socketIO.ts';
-import RoomManager from '../back/room.ts';
-import GameManager from '../back/game.ts';
-import UserManager from '../back/user.ts';
+import RoomManager from '../back/room-manager.ts';
+import GameManager from '../back/game-manager.ts';
+import UserManager from '../back/user-manager.ts';
 import HandlerFactory from './handlerfactory.ts';
 
 const server: FastifyInstance = Fastify({logger: true});
-const gameManager: GameManager = new GameManager(server);
-const roomManager: RoomManager = new RoomManager(server);
 const userManager: UserManager = new UserManager();
+const gameManager: GameManager = new GameManager(server);
+const roomManager: RoomManager = new RoomManager(server, gameManager, userManager);
 const handlerFactory: HandlerFactory = new HandlerFactory(server, roomManager, gameManager, userManager);
 
 const __filename: string = fileURLToPath(import.meta.url);
