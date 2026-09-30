@@ -17,6 +17,10 @@ class Room {
     }
 
     public addPlayer(playerId: string) {
+        if (this.players.find(id => id === playerId)) {
+            throw new Error(`Player ${playerId} already in the room.`);
+        }
+
         if (this.players.length < this.maxPlayers) {
             this.players.push(playerId);
         }

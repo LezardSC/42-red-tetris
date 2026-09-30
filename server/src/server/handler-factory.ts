@@ -6,7 +6,7 @@ import type UserManager from '../back/user-manager.ts';
 
 
 class HandlerFactory {
-    regex: RegExp = /^[a-zA-Z0-9_]+$/;
+    regex: RegExp = /^[a-zA-Z0-9_-]+$/;
     maxNameLength: number = 16;
     server!: FastifyInstance;
     roomManager!: RoomManager;
