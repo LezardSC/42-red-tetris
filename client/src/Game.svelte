@@ -63,7 +63,7 @@ function releaseKeys(): void {
     <section class="glass-panel flex flex-col sm:flex-row gap-6 items-center sm:items-start">
         <div class="board own-board">
             {#each cells as cell, i (i)}
-                <div class="cell" class:block={cell !== '.'} style:--c={COLORS[cell]}></div>
+                <div class="cell" class:tetris-block={cell !== '.'} style:--c={COLORS[cell]}></div>
             {/each}
         </div>
 
@@ -148,10 +148,8 @@ function releaseKeys(): void {
         @apply bg-slate-900/60 rounded-[2px];
     }
 
-    .block {
-        background-color: var(--c);
-        border: 1px solid rgba(255, 255, 255, 0.6);
-        box-shadow: 0 0 6px var(--c), inset 0 0 4px rgba(255, 255, 255, 0.4);
+    .tetris-block {
+        @apply rounded-none;
     }
 
     .spectrum {
