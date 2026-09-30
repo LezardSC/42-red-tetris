@@ -6,7 +6,7 @@ import socketIO from './socketIO.ts';
 import RoomManager from '../back/room-manager.ts';
 import GameManager from '../back/game-manager.ts';
 import UserManager from '../back/user-manager.ts';
-import HandlerFactory from './handlerfactory.ts';
+import HandlerFactory from './handler-factory.ts';
 
 const __filename: string = fileURLToPath(import.meta.url);
 const __dirname: string = path.dirname(__filename);

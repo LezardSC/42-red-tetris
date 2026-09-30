@@ -244,7 +244,6 @@ describe("Game", () => {
                 listener
             );
 
-            // On simule la défaite du joueur
             game.players[0]![1].lost = true;
 
             game.start();
