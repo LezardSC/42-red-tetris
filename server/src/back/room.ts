@@ -29,6 +29,10 @@ class Room {
         }
     }
 
+    public hasPlayerNamed(name: string): boolean {
+        return this.players.some(id => this.userManager.getUserName(id) === name);
+    }
+
     public removePlayer(playerId: string) {
         const index = this.players.findIndex(id => id === playerId);
 
