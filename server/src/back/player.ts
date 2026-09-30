@@ -1,6 +1,7 @@
 import EventEmitter from "events";
 import { Piece, Coordinates, Color } from "./piece.ts";
 
+
 class Player {
     playerId!: string;
     playerName!: string | undefined;
@@ -23,6 +24,13 @@ class Player {
             this.board[i] = Color.Empty;
         }
         this.piece = new Piece(4, 1, firstPiece, 0);
+    }
+
+    public lose() {
+        if (this.lost)
+            return;
+        this.lost = true;
+        this.playerEmitter.emit('lost', this.playerId);
     }
 
     public moveDown() {
@@ -49,8 +57,7 @@ class Player {
         if (this.leftKey && !this.checkCollision(Direction.Left)) {
             this.piece.center.x--;
         }
-        if (this.upKey) {
-            //TODO: Need to check collisions here as well...
+        if (this.upKey && !this.checkCollision(Direction.Rotate)) {
             this.piece.tiles.forEach(tile => {
                 tile.rotate(-90);
             });
@@ -156,12 +163,15 @@ class Player {
                 case Direction.Down:
                     tileAbsolute.y += 1;
                     break;
+                case Direction.Rotate:
+                    tileAbsolute.rotate(-90, new Coordinates(this.piece.center.x, this.piece.center.y));
+                    break;
             }
 
             
             if (this.board[tileAbsolute.x + tileAbsolute.y * 10] != Color.Empty || tileAbsolute.x > this.boardSize[0] - 1 || tileAbsolute.x < 0 || tileAbsolute.y > this.boardSize[1] - 1) {
-                if (this.piece.startPos.equals(this.piece.center))
-                    this.lost = true;
+                if (this.piece.startPos.equals(this.piece.center) && direction == Direction.Down)
+                    this.lose();
                 return true;
             }
 
@@ -176,6 +186,7 @@ const Direction = {
     Down: "Down",
     Left: "Left",
     Right: "Right",
+    Rotate: "Rotate",
 }
 
 export default Player

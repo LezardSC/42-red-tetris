@@ -160,11 +160,11 @@ class Coordinates {
         return toTest.x == this.x && toTest.y == this.y;
     }
 
-    public rotate(angle: number) {
+    public rotate(angle: number, center: Coordinates = new Coordinates(0, 0)) {
         let angleRad: number = angle * Math.PI / 180; 
-        let newX: number = this.x * Math.cos(angleRad) + this.y * Math.sin(angleRad);
+        let newX: number = center.x + (this.x - center.x) * Math.cos(angleRad) + (this.y - center.y) * Math.sin(angleRad);
         newX = Math.round(newX * 10) / 10
-        let newY: number = this.y * Math.cos(angleRad) - this.x * Math.sin(angleRad);
+        let newY: number = center.y + (this.y - center.y) * Math.cos(angleRad) - (this.x - center.x) * Math.sin(angleRad);
         newY = Math.round(newY * 10) / 10
         this.x = newX;
         this.y = newY;

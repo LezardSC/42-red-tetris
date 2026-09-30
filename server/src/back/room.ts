@@ -1,5 +1,6 @@
 import UserManager from "./user-manager.ts";
 
+
 class Room {
     id!: string;
     host!: string | undefined;
