@@ -15,7 +15,8 @@ class GameManager {
     public startGame(gameId: string, playersId: Array<string>) {
         let game: Game = new Game(gameId, playersId);
         game.gameEmitter.on('status', (status) => this.sendGameStatus(gameId, status));
-        game.gameEmitter.on('gameend', () => this.gameEnded(gameId));
+        game.gameEmitter.on('playerlost', (playerId) => this.gameManagerEmitter.emit('playerlost', gameId, playerId));
+        game.gameEmitter.on('gameend', (winnerId) => this.gameEnded(gameId, winnerId));
         this.games.push([gameId, game]);
         game.start();
     }
@@ -52,17 +53,29 @@ class GameManager {
         }
     }
 
-    private gameEnded(gameId: string) {
+    public removePlayer(playerId: string) {
+        this.games.forEach(([, game]) => game.forfeit(playerId));
+    }
+
+    // MOCK: makes every opponent of playerId lose, until the game itself is playable.
+    public forceWin(playerId: string) {
+        this.games.forEach(([, game]) => {
+            if (game.players.some(([id]) => id == playerId)) {
+                game.players.filter(([id]) => id != playerId).forEach(([id]) => game.forfeit(id));
+            }
+        });
+    }
+
+    private gameEnded(gameId: string, winnerId: string | null) {
         try {
             const index = this.games.findIndex(([id]) => id === gameId);
             const gameTuple = this.games.find(([id]) => id === gameId);
             if (!gameTuple || index === -1) {
                 throw new Error(`Game was not found.`);
             }
-            this.gameManagerEmitter.emit('gameend', gameId);
-            gameTuple[1].gameEmitter.off('status', (status) => this.sendGameStatus(gameId, status));
-            gameTuple[1].gameEmitter.off('gameend', () => this.gameEnded(gameId));
+            gameTuple[1].gameEmitter.removeAllListeners();
             this.games.splice(index, 1);
+            this.gameManagerEmitter.emit('gameend', gameId, winnerId);
             this.server.log.info(`Game ${gameId} was deleted.`)
         }
         catch (error) {
@@ -99,6 +112,8 @@ class Game {
             player[1].piece = new Piece(4, 1, this.pieceManager.nextPieces[id + 1], id + 1)
         }));
 
+        this.players.forEach((player) => player[1].playerEmitter.on('lost', (id) => this.gameEmitter.emit('playerlost', id)));
+
         this.players.forEach((player) => player[1].playerEmitter.on('deletedrows', (id, nb) => {
             this.players.filter(playerTuple => playerTuple[1].playerId != id).forEach(playerTuple =>{
                 playerTuple[1].addIdleRows(nb - 1);
@@ -128,6 +143,22 @@ class Game {
         }
         playerTuple[1].keyReleased(key);
     }
+
+    public forfeit(playerId: string) {
+        const playerTuple = this.players.find(([id, ]) => id == playerId);
+        if (!playerTuple) {
+            return;
+        }
+        playerTuple[1].lose();
+    }
+
+    private getWinner(): string | null {
+        if (this.players.length == 1) {
+            return null;
+        }
+        const alive = this.players.find(([, player]) => !player.lost);
+        return alive ? alive[0] : null;
+    }
     
     private async startEmissionLoop(timer: number) {
         while (!this.gameEnded) {
@@ -138,14 +169,14 @@ class Game {
             this.gameEmitter.emit('status', status);
             await new Promise(resolve => setTimeout(resolve, timer));
         }
-        this.gameEmitter.emit('gameend');
+        this.gameEmitter.emit('gameend', this.getWinner());
     }
     
     private async startMainGameLoop(timer: number) {
         while (!this.gameEnded) {
             //TODO: start chrono then update then sleep rest of time
             this.time++;
-            this.players.forEach(player => {
+            this.players.filter(player => !player[1].lost).forEach(player => {
                 player[1].move();
                 player[1].moveDown();
                 player[1].checkCompletedRows();

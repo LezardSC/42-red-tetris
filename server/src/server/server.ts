@@ -12,6 +12,7 @@ const gameManager: GameManager = new GameManager(server);
 const roomManager: RoomManager = new RoomManager(server);
 const userManager: UserManager = new UserManager();
 const handlerFactory: HandlerFactory = new HandlerFactory(server, roomManager, gameManager, userManager);
+handlerFactory.registerGameEvents();
 
 const __filename: string = fileURLToPath(import.meta.url);
 const __dirname: string = path.dirname(__filename);
@@ -41,6 +42,8 @@ server.ready().then(() => {
     socket.on('start', handlerFactory.createStartHandler(socket));
     socket.on('keydown', handlerFactory.createKeyPressedHandler(socket));
     socket.on('keyup', handlerFactory.createKeyReleasedHandler(socket));
+    socket.on('mocklose', handlerFactory.createMockLoseHandler(socket));
+    socket.on('mockwin', handlerFactory.createMockWinHandler(socket));
     
     server.log.info(`Socket ${socket.id} connected.`);
     socket.emit('rooms', roomManager.getAllRoomStatus());
