@@ -1,7 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-
-type Rgb = [number, number, number];
-type Coordinates = { x: number; y: number };
+import type { Rgb, ServerPiece } from './board';
 
 export type RoomStatus = {
     id: string;
@@ -11,14 +9,13 @@ export type RoomStatus = {
     gameOngoing: boolean;
 };
 
+// The fields of the server's `Player` objects that the client uses.
 export type PlayerState = {
     playerId: string;
+    playerName?: string;
     board: Rgb[];
-    piece: {
-        center: Coordinates;
-        tiles: Coordinates[];
-        color: Rgb;
-    };
+    piece: ServerPiece;
+    lost: boolean;
 };
 
 export type GameStatus = {
@@ -36,6 +33,7 @@ export const game = $state({
     solo: false,
     lost: [] as string[],
     result: null as { winner: string | null } | null,
+    state: null as GameStatus | null,
 });
 
 export function getSocket(): Socket | null {
@@ -75,10 +73,14 @@ export function connect(): Socket {
     });
 
     s.on('gamestarting', () => {
-        // Nobody can join once the game starts, so the current player count is the round's.
         game.solo = room.status?.players.length === 1;
         game.lost = [];
         game.result = null;
+        game.state = null;
+    });
+
+    s.on('gamestatus', (state: GameStatus) => {
+        game.state = state;
     });
 
     s.on('playerlost', ({ name }: { name: string | null }) => {
@@ -120,14 +122,8 @@ export async function joinRoom(roomId: string): Promise<string> {
     return error;
 }
 
-// MOCK: ask the server to make us top out / make every opponent top out, until the
-// game itself is wired. The server answers with the real `playerlost` / `gameend`.
-export function mockTopOut(): void {
-    socket?.emit('mocklose');
-}
-
-export function mockWin(): void {
-    socket?.emit('mockwin');
+export function sendKey(type: 'keydown' | 'keyup', key: string): void {
+    socket?.emit(type, key);
 }
 
 export function startGame(): void {
@@ -145,6 +141,7 @@ function resetRoom(): void {
     room.status = null;
     game.lost = [];
     game.result = null;
+    game.state = null;
 }
 
 export function disconnect(): void {
