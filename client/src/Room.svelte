@@ -1,6 +1,6 @@
 <script lang="ts">
 import { onDestroy } from 'svelte';
-import { router } from 'tinro';
+import { goto } from './lib/router.svelte';
 import Game from './Game.svelte';
 import GameOver from './GameOver.svelte';
 import {
@@ -89,7 +89,7 @@ const RESULT_TITLES: Record<Outcome, string> = {
 
 function quitRoom(): void {
     leaveRoom();
-    router.goto('/');
+    goto('/');
 }
 </script>
 

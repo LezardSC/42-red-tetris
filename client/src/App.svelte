@@ -2,8 +2,8 @@
   import './main.css';
 
   import { onDestroy } from 'svelte';
-  import {Route} from 'tinro';
   import { connect, disconnect } from './lib/socket.svelte';
+  import { goto, matchRoute, route } from './lib/router.svelte';
 
   import Frontpage from './Frontpage.svelte';
   import Room from './Room.svelte';
@@ -13,6 +13,14 @@
 
   connect();
   onDestroy(disconnect);
+
+  const roomParams = $derived(matchRoute('/:room/:username', route.path));
+  const isHome: boolean = $derived(matchRoute('/', route.path) !== null);
+
+  // Unknown URLs go back to the front page.
+  $effect(() => {
+    if (!isHome && !roomParams) goto('/', true);
+  });
 </script>
 
 <Header />
@@ -21,7 +29,8 @@
   <TetrisBackground />
 </div>
 
-<Route path="/"><Frontpage /></Route>
-<Route path="/:room/:username" let:meta>
-  <Room room={meta.params.room} username={meta.params.username} />
-</Route>
+{#if roomParams}
+  <Room room={roomParams.room} username={roomParams.username} />
+{:else if isHome}
+  <Frontpage />
+{/if}
