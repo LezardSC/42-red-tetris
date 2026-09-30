@@ -1,0 +1,632 @@
+import { describe, expect, it, vi } from "vitest";
+import Player from "../src/back/player.ts";
+import { PieceType, Color } from "../src/back/piece.ts";
+
+describe("Player", () => {
+    const boardSize: [number, number] = [10, 20];
+
+    const createPlayer = (
+        playerName: string | undefined = "Player",
+        playerId: string = "player-1",
+        firstPiece: string = PieceType.T,
+    ) => {
+        return new Player(
+            playerName,
+            playerId,
+            boardSize,
+            firstPiece,
+        );
+    };
+
+    describe("constructor", () => {
+        it("should initialize the player id", () => {
+            const player = createPlayer(
+                "Alice",
+                "player-123",
+            );
+
+            expect(player.playerId).toBe("player-123");
+        });
+
+        it("should initialize the player name", () => {
+            const player = createPlayer("Alice");
+
+            expect(player.playerName).toBe("Alice");
+        });
+
+        it("should initialize the board size", () => {
+            const player = createPlayer();
+
+            expect(player.boardSize).toEqual([10, 20]);
+        });
+
+        it("should initialize a board with the correct size", () => {
+            const player = createPlayer();
+
+            expect(player.board).toHaveLength(200);
+        });
+
+        it("should initialize every board cell as empty", () => {
+            const player = createPlayer();
+
+            expect(
+                player.board.every(
+                    color => color === Color.Empty,
+                ),
+            ).toBe(true);
+        });
+
+        it("should create the first piece", () => {
+            const player = createPlayer(
+                "Alice",
+                "player-1",
+                PieceType.T,
+            );
+
+            expect(player.piece.type).toBe(PieceType.T);
+            expect(player.piece.id).toBe(0);
+        });
+
+        it("should create the first piece at the expected position", () => {
+            const player = createPlayer();
+
+            expect(player.piece.center.x).toBe(4);
+            expect(player.piece.center.y).toBe(1);
+
+            expect(player.piece.startPos.x).toBe(4);
+            expect(player.piece.startPos.y).toBe(1);
+        });
+
+        it("should initialize the player as not lost", () => {
+            const player = createPlayer();
+
+            expect(player.lost).toBe(false);
+        });
+
+        it("should initialize all key states as false", () => {
+            const player = createPlayer();
+
+            expect(player.leftKey).toBe(false);
+            expect(player.rightKey).toBe(false);
+            expect(player.upKey).toBe(false);
+            expect(player.downKey).toBe(false);
+        });
+    });
+
+    describe("lose", () => {
+        it("should mark the player as lost", () => {
+            const player = createPlayer();
+
+            player.lose();
+
+            expect(player.lost).toBe(true);
+        });
+
+        it("should emit the lost event with the player id", () => {
+            const player = createPlayer(
+                "Alice",
+                "player-42",
+            );
+
+            const listener = vi.fn();
+
+            player.playerEmitter.on("lost", listener);
+
+            player.lose();
+
+            expect(listener).toHaveBeenCalledOnce();
+            expect(listener).toHaveBeenCalledWith("player-42");
+        });
+
+        it("should only emit lost once", () => {
+            const player = createPlayer();
+
+            const listener = vi.fn();
+
+            player.playerEmitter.on("lost", listener);
+
+            player.lose();
+            player.lose();
+            player.lose();
+
+            expect(listener).toHaveBeenCalledOnce();
+        });
+
+        it("should remain lost after calling lose multiple times", () => {
+            const player = createPlayer();
+
+            player.lose();
+            player.lose();
+
+            expect(player.lost).toBe(true);
+        });
+    });
+
+    describe("keyPressed", () => {
+        it("should set downKey for ArrowDown", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowDown");
+
+            expect(player.downKey).toBe(true);
+        });
+
+        it("should set upKey for ArrowUp", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowUp");
+
+            expect(player.upKey).toBe(true);
+        });
+
+        it("should set leftKey for ArrowLeft", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowLeft");
+
+            expect(player.leftKey).toBe(true);
+        });
+
+        it("should set rightKey for ArrowRight", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowRight");
+
+            expect(player.rightKey).toBe(true);
+        });
+
+        it("should ignore unknown keys", () => {
+            const player = createPlayer();
+
+            player.keyPressed("Space");
+
+            expect(player.downKey).toBe(false);
+            expect(player.upKey).toBe(false);
+            expect(player.leftKey).toBe(false);
+            expect(player.rightKey).toBe(false);
+        });
+    });
+
+    describe("keyReleased", () => {
+        it("should release downKey", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowDown");
+            player.keyReleased("ArrowDown");
+
+            expect(player.downKey).toBe(false);
+        });
+
+        it("should release upKey", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowUp");
+            player.keyReleased("ArrowUp");
+
+            expect(player.upKey).toBe(false);
+        });
+
+        it("should release leftKey", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowLeft");
+            player.keyReleased("ArrowLeft");
+
+            expect(player.leftKey).toBe(false);
+        });
+
+        it("should release rightKey", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowRight");
+            player.keyReleased("ArrowRight");
+
+            expect(player.rightKey).toBe(false);
+        });
+
+        it("should ignore unknown keys", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowLeft");
+            player.keyReleased("Space");
+
+            expect(player.leftKey).toBe(true);
+        });
+    });
+
+    describe("moveDown", () => {
+        it("should move the piece down when there is no collision", () => {
+            const player = createPlayer();
+
+            const initialY = player.piece.center.y;
+
+            player.moveDown();
+
+            expect(player.piece.center.y).toBe(
+                initialY + 1,
+            );
+        });
+
+        it("should place the piece on the board when it collides", () => {
+            const player = createPlayer();
+
+            player.piece.center.y = 19;
+
+            const listener = vi.fn();
+            player.playerEmitter.on("piecedown", listener);
+
+            player.moveDown();
+
+            expect(listener).toHaveBeenCalledOnce();
+            expect(listener).toHaveBeenCalledWith(
+                player.piece.id,
+            );
+        });
+
+        it("should write the piece colors to the board after collision", () => {
+            const player = createPlayer(
+                "Player",
+                "player-1",
+                PieceType.O,
+            );
+
+            player.piece.center.y = 19.5;
+
+            player.moveDown();
+
+            expect(
+                player.board.some(
+                    color => color === player.piece.color,
+                ),
+            ).toBe(true);
+        });
+    });
+
+    describe("move", () => {
+        it("should move right when rightKey is pressed", () => {
+            const player = createPlayer();
+
+            player.rightKey = true;
+
+            const initialX = player.piece.center.x;
+
+            player.move();
+
+            expect(player.piece.center.x).toBe(
+                initialX + 1,
+            );
+        });
+
+        it("should move left when leftKey is pressed", () => {
+            const player = createPlayer();
+
+            player.leftKey = true;
+
+            const initialX = player.piece.center.x;
+
+            player.move();
+
+            expect(player.piece.center.x).toBe(
+                initialX - 1,
+            );
+        });
+
+        it("should not move horizontally when no key is pressed", () => {
+            const player = createPlayer();
+
+            const initialX = player.piece.center.x;
+
+            player.move();
+
+            expect(player.piece.center.x).toBe(initialX);
+        });
+
+        it("should rotate when upKey is pressed", () => {
+            const player = createPlayer(
+                "Player",
+                "player-1",
+                PieceType.T,
+            );
+
+            player.upKey = true;
+
+            const originalTiles = player.piece.tiles.map(
+                tile => [tile.x, tile.y],
+            );
+
+            player.move();
+
+            const rotatedTiles = player.piece.tiles.map(
+                tile => [tile.x, tile.y],
+            );
+
+            expect(rotatedTiles).not.toEqual(originalTiles);
+        });
+
+        it("should not rotate when upKey is not pressed", () => {
+            const player = createPlayer(
+                "Player",
+                "player-1",
+                PieceType.T,
+            );
+
+            const originalTiles = player.piece.tiles.map(
+                tile => [tile.x, tile.y],
+            );
+
+            player.move();
+
+            expect(
+                player.piece.tiles.map(
+                    tile => [tile.x, tile.y],
+                ),
+            ).toEqual(originalTiles);
+        });
+
+        it("should process right movement and rotation", () => {
+            const player = createPlayer();
+
+            player.rightKey = true;
+            player.upKey = true;
+
+            const initialX = player.piece.center.x;
+
+            player.move();
+
+            expect(player.piece.center.x).toBe(
+                initialX + 1,
+            );
+        });
+    });
+
+    describe("checkCompletedRows", () => {
+        it("should return zero when there are no completed rows", () => {
+            const player = createPlayer();
+
+            expect(player.checkCompletedRows()).toBe(0);
+        });
+
+        it("should delete a completed row", () => {
+            const player = createPlayer();
+
+            for (let i = 0; i < 10; i++) {
+                player.board[i] = Color.O;
+            }
+
+            expect(player.checkCompletedRows()).toBe(1);
+
+            expect(
+                player.board.slice(0, 10),
+            ).toEqual(
+                new Array(10).fill(Color.Empty),
+            );
+        });
+
+        it("should return the number of deleted rows", () => {
+            const player = createPlayer();
+
+            for (let i = 0; i < 10; i++) {
+                player.board[i] = Color.O;
+            }
+
+            for (let i = 10; i < 20; i++) {
+                player.board[i] = Color.I;
+            }
+
+            expect(player.checkCompletedRows()).toBe(2);
+        });
+
+        it("should emit deletedrows when more than one row is deleted", () => {
+            const player = createPlayer(
+                "Player",
+                "player-42",
+            );
+
+            for (let i = 0; i < 20; i++) {
+                player.board[i] = Color.O;
+            }
+
+            const listener = vi.fn();
+
+            player.playerEmitter.on(
+                "deletedrows",
+                listener,
+            );
+
+            player.checkCompletedRows();
+
+            expect(listener).toHaveBeenCalledOnce();
+            expect(listener).toHaveBeenCalledWith(
+                "player-42",
+                2,
+            );
+        });
+
+        it("should not emit deletedrows for one row", () => {
+            const player = createPlayer();
+
+            for (let i = 0; i < 10; i++) {
+                player.board[i] = Color.O;
+            }
+
+            const listener = vi.fn();
+
+            player.playerEmitter.on(
+                "deletedrows",
+                listener,
+            );
+
+            player.checkCompletedRows();
+
+            expect(listener).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("addIdleRows", () => {
+        it("should add one row of idle cells", () => {
+            const player = createPlayer();
+
+            player.addIdleRows(1);
+
+            expect(
+                player.board
+                    .slice(player.board.length - 10)
+                    .every(color => color === Color.Idle),
+            ).toBe(true);
+        });
+
+        it("should add multiple rows of idle cells", () => {
+            const player = createPlayer();
+
+            player.addIdleRows(3);
+
+            expect(
+                player.board
+                    .slice(player.board.length - 30)
+                    .every(color => color === Color.Idle),
+            ).toBe(true);
+        });
+
+        it("should move existing board contents down", () => {
+            const player = createPlayer();
+
+            player.board[0] = Color.O;
+
+            player.addIdleRows(1);
+
+            expect(player.board[0]).toBe(Color.Empty);
+            expect(player.board[190]).toBe(Color.Idle);
+            expect(player.board[199]).toBe(Color.Idle);
+        });
+
+        it("should move the piece upwards by the number of idle rows", () => {
+            const player = createPlayer();
+
+            player.piece.center.y = 10;
+
+            player.addIdleRows(3);
+
+            expect(player.piece.center.y).toBe(7);
+        });
+
+        it("should not move the piece above its starting position", () => {
+            const player = createPlayer();
+
+            player.piece.center.y = 3;
+
+            player.addIdleRows(5);
+
+            expect(player.piece.center.y).toBe(
+                player.piece.startPos.y,
+            );
+        });
+
+        it("should preserve the starting position", () => {
+            const player = createPlayer();
+
+            const startY = player.piece.startPos.y;
+
+            player.addIdleRows(2);
+
+            expect(player.piece.startPos.y).toBe(startY);
+        });
+    });
+
+    describe("collision and boundaries", () => {
+        it("should not move left outside the board", () => {
+            const player = createPlayer();
+
+            player.piece.center.x = 0;
+            player.leftKey = true;
+
+            player.move();
+
+            expect(player.piece.center.x).toBe(0);
+        });
+
+        it("should not move right outside the board", () => {
+            const player = createPlayer();
+
+            player.piece.center.x = 9;
+            player.rightKey = true;
+
+            player.move();
+
+            expect(player.piece.center.x).toBe(9);
+        });
+
+        it("should stop moving down at the bottom of the board", () => {
+            const player = createPlayer();
+
+            player.piece.center.y = 19;
+
+            const initialY = player.piece.center.y;
+
+            player.moveDown();
+
+            expect(player.piece.center.y).toBe(initialY);
+        });
+
+        it("should lose when a downward collision happens at the start position", () => {
+            const player = createPlayer();
+
+            player.piece.center.y = player.piece.startPos.y;
+
+            for (let i = 0; i < 30; i++) {
+                player.board[i] = Color.O;
+            }
+
+            const listener = vi.fn();
+
+            player.playerEmitter.on("lost", listener);
+
+            player.moveDown();
+
+            expect(player.lost).toBe(true);
+            expect(listener).toHaveBeenCalledWith(
+                player.playerId,
+            );
+        });
+
+        it("should not move into an occupied cell", () => {
+            const player = createPlayer();
+
+            player.board[4 + 1 * 10] = Color.O;
+
+            player.piece.center.x = 4;
+            player.piece.center.y = 1;
+            player.rightKey = true;
+
+            player.move();
+
+            expect(player.piece.center.x).toBe(4);
+        });
+    });
+
+    describe("independent key states", () => {
+        it("should allow multiple keys to be pressed simultaneously", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowLeft");
+            player.keyPressed("ArrowUp");
+            player.keyPressed("ArrowDown");
+
+            expect(player.leftKey).toBe(true);
+            expect(player.upKey).toBe(true);
+            expect(player.downKey).toBe(true);
+            expect(player.rightKey).toBe(false);
+        });
+
+        it("should release only the requested key", () => {
+            const player = createPlayer();
+
+            player.keyPressed("ArrowLeft");
+            player.keyPressed("ArrowRight");
+
+            player.keyReleased("ArrowLeft");
+
+            expect(player.leftKey).toBe(false);
+            expect(player.rightKey).toBe(true);
+        });
+    });
+});

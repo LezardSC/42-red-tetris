@@ -3,10 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path'
 import { fileURLToPath } from 'url';
 import socketIO from './socketIO.ts';
-import RoomManager from '../back/room.ts';
-import GameManager from '../back/game.ts';
-import UserManager from '../back/user.ts';
-import HandlerFactory from './handlerfactory.ts';
+import RoomManager from '../back/room-manager.ts';
+import GameManager from '../back/game-manager.ts';
+import UserManager from '../back/user-manager.ts';
+import HandlerFactory from './handler-factory.ts';
 
 const __filename: string = fileURLToPath(import.meta.url);
 const __dirname: string = path.dirname(__filename);
@@ -21,9 +21,9 @@ const PORT: number = Number(process.env['PORT'] ?? 3000);
 const CLIENT_DIST: string = path.resolve(repoRoot, process.env['CLIENT_DIST'] ?? 'client/dist');
 
 const server: FastifyInstance = Fastify({logger: true});
-const gameManager: GameManager = new GameManager(server);
-const roomManager: RoomManager = new RoomManager(server);
 const userManager: UserManager = new UserManager();
+const gameManager: GameManager = new GameManager(server);
+const roomManager: RoomManager = new RoomManager(server, gameManager, userManager);
 const handlerFactory: HandlerFactory = new HandlerFactory(server, roomManager, gameManager, userManager);
 handlerFactory.registerGameEvents();
 
