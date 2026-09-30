@@ -44,6 +44,7 @@ describe("HandlerFactory", () => {
             leave: vi.fn(),
             remove: vi.fn(),
             checkAvailable: vi.fn(),
+            isNameTaken: vi.fn(() => false),
             getRoomStatus: vi.fn(),
             getRoomPlayers: vi.fn(),
             getPlayerRoom: vi.fn(),
@@ -665,6 +666,31 @@ describe("HandlerFactory", () => {
             expect(ack).toHaveBeenCalledWith(
                 "A game is in progress in this room. Try again after it ends.",
             );
+        });
+
+        it("should reject joining when the username is taken in the room", () => {
+            vi.spyOn(roomManager, "isNameTaken")
+                .mockReturnValue(true);
+
+            const ack = vi.fn();
+
+            const handler =
+                factory.createJoinHandler(socket);
+
+            handler("room-1", ack);
+
+            expect(roomManager.isNameTaken)
+                .toHaveBeenCalledWith("room-1", "Alice");
+
+            expect(ack).toHaveBeenCalledWith(
+                "This username is already taken in this room.",
+            );
+
+            expect(roomManager.join)
+                .not.toHaveBeenCalled();
+
+            expect(socket.join)
+                .not.toHaveBeenCalled();
         });
 
         it("should join an existing room", () => {
