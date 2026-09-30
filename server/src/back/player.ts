@@ -27,6 +27,13 @@ class Player {
         this.piece = new Piece(4, 1, firstPiece, 0);
     }
 
+    public lose() {
+        if (this.lost)
+            return;
+        this.lost = true;
+        this.playerEmitter.emit('lost', this.playerId);
+    }
+
     public moveDown() {
         if (!this.checkCollision(Direction.Down)) {
             this.piece.center.y++;
@@ -165,7 +172,7 @@ class Player {
             
             if (this.board[tileAbsolute.x + tileAbsolute.y * 10] != Color.Empty || tileAbsolute.x > this.boardSize[0] - 1 || tileAbsolute.x < 0 || tileAbsolute.y > this.boardSize[1] - 1) {
                 if (this.piece.startPos.equals(this.piece.center) && direction == Direction.Down)
-                    this.lost = true;
+                    this.lose();
                 return true;
             }
 

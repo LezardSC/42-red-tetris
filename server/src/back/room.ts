@@ -86,6 +86,7 @@ class RoomManager {
             
             roomTuple[1].start(playerId);
             this.server.log.info(`${playerId} started game in room ${roomId}.`);
+            this.server.socketIO.emit('rooms', this.getAllRoomStatus())
             return true;
         }
         catch (error){
@@ -103,6 +104,7 @@ class RoomManager {
             }
 
             roomTuple[1].end()
+            this.server.socketIO.emit('rooms', this.getAllRoomStatus())
 
         }
         catch (error) {
