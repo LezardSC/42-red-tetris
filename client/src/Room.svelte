@@ -13,6 +13,7 @@ import {
     room as currentRoom,
     startGame,
 } from './lib/socket.svelte';
+import { nameError } from './lib/validation';
 
 type Player = {
     name: string;
@@ -29,14 +30,6 @@ type RoomStatus = {
 
 let { room, username }: { room: string; username: string } = $props();
 
-const regex: RegExp = /^[a-zA-Z0-9_]+$/;
-
-function validateParams(roomName: string, playerName: string): string {
-    if (!regex.test(roomName)) return 'Invalid room name: only letters, numbers, and underscores are allowed.';
-    if (!regex.test(playerName)) return 'Invalid username: only letters, numbers, and underscores are allowed.';
-    return '';
-}
-
 function emptySlots(status: RoomStatus): number[] {
     return Array.from({ length: Math.max(status.max - status.players.length, 0) }, (_, i) => i);
 }
@@ -48,7 +41,7 @@ function outcomeOf(name: string, winnerName: string | null, isSolo: boolean): Ou
     return winnerName === name ? 'victory' : 'defeat';
 }
 
-const paramError: string = $derived(validateParams(room, username));
+const paramError: string = $derived(nameError(room, 'Room name') || nameError(username, 'Username'));
 let joinError: string = $state('');
 let joining: boolean = false;
 

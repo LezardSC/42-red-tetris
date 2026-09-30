@@ -9,7 +9,7 @@ export type ServerPiece = { center: Coordinates; tiles: Coordinates[]; color: Rg
 export const ROWS = 20;
 export const COLS = 10;
 
-export const EMPTY_CELLS: Cell[] = Array(ROWS * COLS).fill('.');
+export const EMPTY_CELLS: readonly Cell[] = Array(ROWS * COLS).fill('.');
 
 const CELL_BY_RGB: Record<string, Cell> = {
     '254,251,52': 'O',

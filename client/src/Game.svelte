@@ -27,7 +27,7 @@ const GAME_KEYS: string[] = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 
 const alive: boolean = $derived(players.find(player => player.name === username)?.alive ?? false);
 const statePlayers: PlayerState[] = $derived(game.state?.players.map(([, state]) => state) ?? []);
 const me: PlayerState | undefined = $derived(game.state?.players.find(([id]) => id === connection.id)?.[1]);
-const cells: Cell[] = $derived(me ? boardCells(me.board, me.lost ? null : me.piece) : EMPTY_CELLS);
+const cells: readonly Cell[] = $derived(me ? boardCells(me.board, me.lost ? null : me.piece) : EMPTY_CELLS);
 
 const opponents = $derived(
     players

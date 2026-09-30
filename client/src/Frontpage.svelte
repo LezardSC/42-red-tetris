@@ -1,8 +1,7 @@
 <script lang="ts">
 import { router } from 'tinro';
-import { lobby, player, registerUsername, type RoomStatus } from './lib/socket.svelte';
-
-const regex: RegExp = /^[a-zA-Z0-9_]+$/;
+import { lobby, player, registerUsername, resetUsername, type RoomStatus } from './lib/socket.svelte';
+import { nameError } from './lib/validation';
 
 let usernameInput: string = $state('');
 const username: string = $derived(player.name);
@@ -20,47 +19,17 @@ const listRooms: RoomStatus[] = $derived(
         .toReversed()
 );
 
-function validateUsername(name: string): boolean {
-    errors.username = '';
-
-    if (!name) {
-        errors.username = 'Username cannot be empty.';
-        return false;
-    }
-
-    if (!regex.test(name)) {
-        errors.username = 'Username can only contain letters, numbers, and underscores.';
-        return false;
-    }
-
-    return true;
-}
-
 async function setUsername(name: string): Promise<void> {
-    if (!validateUsername(name)) return;
+    errors.username = nameError(name, 'Username');
+    if (errors.username) return;
     registering = true;
     errors.username = await registerUsername(name);
     registering = false;
 }
 
-function validateRoomName(name: string): boolean {
-    errors.createRoom = '';
-
-    if (!name) {
-        errors.createRoom = 'Room name cannot be empty.';
-        return false;
-    }
-
-    if (!regex.test(name)) {
-        errors.createRoom = 'Room name can only contain letters, numbers, and underscores.';
-        return false;
-    }
-
-    return true;
-}
-
 function createRoom(targetRoom: string): void {
-    if (!validateRoomName(targetRoom)) return;
+    errors.createRoom = nameError(targetRoom, 'Room name');
+    if (errors.createRoom) return;
 
     if (username) {
         router.goto(`/${targetRoom}/${username}`);
@@ -70,7 +39,7 @@ function createRoom(targetRoom: string): void {
 }
 
 function joinRoom(targetRoom: string): void {
-    if (!username || !validateUsername(username)) {
+    if (!username) {
         errors.createRoom = 'Please enter a username before joining a room.';
         return;
     }
@@ -105,7 +74,7 @@ function joinRoom(targetRoom: string): void {
         {:else}
             <div class="flex items-center justify-between bg-slate-950/50 p-4 rounded-lg border border-slate-700/50">
                 <p class="text-lg">Playing as <strong class="text-cyan-400 font-bold tracking-wider">{username}</strong></p>
-                <button class="arcade-btn btn-red text-sm py-2 px-4" onclick={() => player.name = ''}>
+                <button class="arcade-btn btn-red text-sm py-2 px-4" onclick={resetUsername}>
                     Change
                 </button>
             </div>
