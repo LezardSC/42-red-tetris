@@ -23,11 +23,9 @@
             {#each p.blocks as block}
                 <div
                     class="tetris-block"
+                    style:--c={p.color}
                     style="left: {block.col * p.size}px; top: {block.row * p.size}px; width: {p.size}px; height: {p.size}px;"
-                >
-                    <div class="tetris-block-bg" style="background-color: {p.color}; box-shadow: 0 0 10px {p.color};"></div>
-                    <div class="tetris-block-bevel"></div>
-                </div>
+                ></div>
             {/each}
         </div>
     {/each}
@@ -55,21 +53,5 @@
 
     .tetris-block {
         position: absolute;
-        box-sizing: border-box;
-        border: 1.5px solid rgba(255, 255, 255, 0.7);
-    }
-
-    .tetris-block-bg {
-        position: absolute;
-        inset: 0;
-        opacity: 0.6;
-    }
-
-    .tetris-block-bevel {
-        position: absolute;
-        top: 1.5px; left: 1.5px; right: 1.5px; bottom: 1.5px;
-        border: 1px solid rgba(0, 0, 0, 0.3);
-        pointer-events: none;
-        z-index: 10;
     }
 </style>
