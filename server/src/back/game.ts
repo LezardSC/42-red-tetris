@@ -4,7 +4,6 @@ import { Piece, PieceManager } from "./piece.ts";
 import UserManager from "./user-manager.ts";
 
 
-
 class Game {
     gameId!: string;
     gameEnded: boolean = false;
@@ -27,6 +26,8 @@ class Game {
                 this.pieceManager.generateNewSet();
             player[1].piece = new Piece(4, 1, this.pieceManager.nextPieces[id + 1], id + 1)
         }));
+
+        this.players.forEach((player) => player[1].playerEmitter.on('lost', (id) => this.gameEmitter.emit('playerlost', id)));
 
         this.players.forEach((player) => player[1].playerEmitter.on('deletedrows', (id, nb) => {
             this.players.filter(playerTuple => playerTuple[1].playerId != id).forEach(playerTuple =>{
@@ -57,6 +58,22 @@ class Game {
         }
         playerTuple[1].keyReleased(key);
     }
+
+    public forfeit(playerId: string) {
+        const playerTuple = this.players.find(([id, ]) => id == playerId);
+        if (!playerTuple) {
+            return;
+        }
+        playerTuple[1].lose();
+    }
+
+    private getWinner(): string | null {
+        if (this.players.length == 1) {
+            return null;
+        }
+        const alive = this.players.find(([, player]) => !player.lost);
+        return alive ? alive[0] : null;
+    }
     
     private async startEmissionLoop(timer: number) {
         while (!this.gameEnded) {
@@ -67,14 +84,14 @@ class Game {
             this.gameEmitter.emit('status', status);
             await new Promise(resolve => setTimeout(resolve, timer));
         }
-        this.gameEmitter.emit('gameend');
+        this.gameEmitter.emit('gameend', this.getWinner());
     }
     
     private async startMainGameLoop(timer: number) {
         while (!this.gameEnded) {
             //TODO: start chrono then update then sleep rest of time
             this.time++;
-            this.players.forEach(player => {
+            this.players.filter(player => !player[1].lost).forEach(player => {
                 player[1].move();
                 player[1].moveDown();
                 player[1].checkCompletedRows();

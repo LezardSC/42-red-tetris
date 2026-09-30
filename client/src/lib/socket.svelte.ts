@@ -1,7 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-
-type Rgb = [number, number, number];
-type Coordinates = { x: number; y: number };
+import type { Rgb, ServerPiece } from './board';
 
 export type RoomStatus = {
     id: string;
@@ -11,14 +9,13 @@ export type RoomStatus = {
     gameOngoing: boolean;
 };
 
+// The fields of the server's `Player` objects that the client uses.
 export type PlayerState = {
     playerId: string;
+    playerName?: string;
     board: Rgb[];
-    piece: {
-        center: Coordinates;
-        tiles: Coordinates[];
-        color: Rgb;
-    };
+    piece: ServerPiece;
+    lost: boolean;
 };
 
 export type GameStatus = {
@@ -32,6 +29,12 @@ export const connection = $state({ connected: false, id: '' });
 export const player = $state({ name: '' });
 export const lobby = $state({ rooms: [] as RoomStatus[] });
 export const room = $state({ id: '', status: null as RoomStatus | null });
+export const game = $state({
+    solo: false,
+    lost: [] as string[],
+    result: null as { winner: string | null } | null,
+    state: null as GameStatus | null,
+});
 
 export function getSocket(): Socket | null {
     return socket;
@@ -69,6 +72,25 @@ export function connect(): Socket {
         room.status = status;
     });
 
+    s.on('gamestarting', () => {
+        game.solo = room.status?.players.length === 1;
+        game.lost = [];
+        game.result = null;
+        game.state = null;
+    });
+
+    s.on('gamestatus', (state: GameStatus) => {
+        game.state = state;
+    });
+
+    s.on('playerlost', ({ name }: { name: string | null }) => {
+        if (name && !game.lost.includes(name)) game.lost = [...game.lost, name];
+    });
+
+    s.on('gameend', ({ winner }: { winner: string | null }) => {
+        game.result = { winner };
+    });
+
     s.on('connect_error', (err) => console.warn(`connect_error: ${err.message}`));
 
     socket = s;
@@ -100,6 +122,14 @@ export async function joinRoom(roomId: string): Promise<string> {
     return error;
 }
 
+export function sendKey(type: 'keydown' | 'keyup', key: string): void {
+    socket?.emit(type, key);
+}
+
+export function startGame(): void {
+    socket?.emit('start');
+}
+
 export function leaveRoom(): void {
     if (!room.id) return;
     socket?.emit('leave');
@@ -109,6 +139,9 @@ export function leaveRoom(): void {
 function resetRoom(): void {
     room.id = '';
     room.status = null;
+    game.lost = [];
+    game.result = null;
+    game.state = null;
 }
 
 export function disconnect(): void {

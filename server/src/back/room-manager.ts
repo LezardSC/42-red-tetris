@@ -11,6 +11,7 @@ class RoomManager {
     rooms: Array<[string, Room]> = [];
     gameEndHandler!: (gameId: string) => void;
 
+
     public constructor(server: FastifyInstance, gameManager: GameManager, userManager: UserManager) {
         this.server = server;
         this.userManager = userManager;
@@ -110,6 +111,7 @@ class RoomManager {
             }
 
             roomTuple[1].end()
+            this.server.socketIO.emit('rooms', this.getAllRoomStatus())
 
         }
         catch (error) {

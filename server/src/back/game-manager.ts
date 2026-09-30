@@ -4,12 +4,14 @@ import Game from "./game.ts"
 import type { GameStatus } from "./game.ts";
 import UserManager from "./user-manager.ts";
 
+
 class GameManager {
     server!: FastifyInstance;
     games: Array<[string, Game]> = [];
     gameManagerEmitter: EventEmitter = new EventEmitter();
     statusHandler!: (status: GameStatus) => void;
     gameEndHandler!: () => void;
+    playerLostHandler!: (playerId: string) => void;
     
     public constructor(server: FastifyInstance) {
         this.server = server;
@@ -19,8 +21,10 @@ class GameManager {
         
         let game: Game = new Game(userManager, gameId, playersId);
         this.statusHandler = (status: GameStatus) => this.sendGameStatus(gameId, status);
+        this.playerLostHandler = (playerId: string) => this.gameManagerEmitter.emit('playerlost', gameId, playerId)
         this.gameEndHandler = () => this.gameEnded(gameId);
         game.gameEmitter.on("status", this.statusHandler);
+        game.gameEmitter.on('playerlost', this.playerLostHandler);
         game.gameEmitter.on("gameend", this.gameEndHandler);
         this.games.push([gameId, game]);
         game.start();
@@ -56,6 +60,19 @@ class GameManager {
 
             gameTuple[1].keyReleased(playerId, key);
         }
+    }
+
+    public removePlayer(playerId: string) {
+        this.games.forEach(([, game]) => game.forfeit(playerId));
+    }
+
+    // MOCK: makes every opponent of playerId lose, until the game itself is playable.
+    public forceWin(playerId: string) {
+        this.games.forEach(([, game]) => {
+            if (game.players.some(([id]) => id == playerId)) {
+                game.players.filter(([id]) => id != playerId).forEach(([id]) => game.forfeit(id));
+            }
+        });
     }
 
     private gameEnded(gameId: string) {
