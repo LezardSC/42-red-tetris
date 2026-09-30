@@ -25,6 +25,9 @@ vi.mock("../src/back/room.ts", () => {
                 this.players.splice(index, 1);
             }
         });
+        hasPlayerNamed = vi.fn((name: string) =>
+            this.players.some(id => this.userManager.getUserName(id) === name),
+        );
         getStatus = vi.fn((): RoomStatus => ({
             id: this.id,
             host: this.host,
@@ -661,6 +664,28 @@ describe("RoomManager", () => {
             expect(server.log.info).toHaveBeenCalledWith(
                 "Room unknown-room was not found",
             );
+        });
+    });
+
+    describe("isNameTaken", () => {
+        it("should return true when the name is used in the room", () => {
+            userManager.addUser("host", "Alice");
+            manager.create("host", "room-1");
+
+            expect(manager.isNameTaken("room-1", "Alice")).toBe(true);
+        });
+
+        it("should return false when the name is only used in another room", () => {
+            userManager.addUser("host", "Alice");
+            userManager.addUser("host-2", "Bob");
+            manager.create("host", "room-1");
+            manager.create("host-2", "room-2");
+
+            expect(manager.isNameTaken("room-1", "Bob")).toBe(false);
+        });
+
+        it("should return false for an unknown room", () => {
+            expect(manager.isNameTaken("unknown-room", "Alice")).toBe(false);
         });
     });
 

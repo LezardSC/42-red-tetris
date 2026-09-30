@@ -181,6 +181,11 @@ class RoomManager {
         return roomTuple[1].getStatus();
     }
 
+    public isNameTaken(roomId: string, name: string): boolean {
+        const roomTuple = this.rooms.find(([id]) => id === roomId);
+        return roomTuple ? roomTuple[1].hasPlayerNamed(name) : false;
+    }
+
     public getRoomPlayers(roomId: string): Array<string> | null {
         const roomTuple = this.rooms.find(([id]) => id === roomId);
 
