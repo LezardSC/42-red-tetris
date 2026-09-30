@@ -109,6 +109,10 @@ export async function registerUsername(name: string): Promise<string> {
     return '';
 }
 
+export function resetUsername(): void {
+    player.name = '';
+}
+
 export async function joinRoom(roomId: string): Promise<string> {
     if (!socket || !socket.connected) return 'Not connected to the server.';
     room.id = roomId;
