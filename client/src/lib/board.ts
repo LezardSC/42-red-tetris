@@ -42,14 +42,6 @@ export function boardCells(board: Rgb[], piece: ServerPiece | null): Cell[] {
     return cells.map((cell, i) => (covered.has(i) ? pieceCell : cell));
 }
 
-export function spectrum(board: Rgb[]): number[] {
-    const cells = board.map(toCell);
-    return Array.from({ length: COLS }, (_, x) => {
-        const top = Array.from({ length: ROWS }, (_, y) => y).find(y => cells[y * COLS + x] !== '.');
-        return top === undefined ? 0 : ROWS - top;
-    });
-}
-
 export function spectrumCells(heights: number[]): boolean[] {
     return Array.from({ length: ROWS }, (_, r) => r).flatMap(r => heights.map(height => ROWS - r <= height));
 }
