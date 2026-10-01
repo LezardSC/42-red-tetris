@@ -9,13 +9,13 @@ class RoomManager {
     server!: FastifyInstance;
     userManager!: UserManager;
     rooms: Array<[string, Room]> = [];
-    gameEndHandler!: (gameId: string) => void;
+    gameEndHandler!: (gameId: string, winnerId: string) => void;
 
 
     public constructor(server: FastifyInstance, gameManager: GameManager, userManager: UserManager) {
         this.server = server;
         this.userManager = userManager;
-        this.gameEndHandler = (gameid: string) => this.end(gameid)
+        this.gameEndHandler = (gameid: string, winnerId: string) => this.end(gameid)
         gameManager.gameManagerEmitter.on('gameend', this.gameEndHandler);
     }
 
@@ -105,7 +105,7 @@ class RoomManager {
     public end(roomId: string) {
         try {
             const roomTuple = this.rooms.find(([id]) => id === roomId);
-                
+
             if (!roomTuple) {
                 throw new Error('Room was not found.');
             }
