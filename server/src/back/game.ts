@@ -38,9 +38,9 @@ class Game {
     }
 
     public start() {
-        this.startEmissionLoop(10);
-        this.startMainGameLoop(150);
-        // this.startMoveGameLoop(100);
+        this.startEmissionLoop(50);
+        this.startMainGameLoop(200);
+        this.startMoveGameLoop(125);
     }
 
     public keyPressed(playerId: string, key: string) {
@@ -89,25 +89,33 @@ class Game {
     
     private async startMainGameLoop(timer: number) {
         while (!this.gameEnded) {
-            //TODO: start chrono then update then sleep rest of time
             this.time++;
-            this.players.filter(player => !player[1].lost).forEach(player => {
-                player[1].move();
+            const start = performance.now();
+            this.players.filter(player => !player[1].lost).forEach(async player => {
                 player[1].moveDown();
                 player[1].checkCompletedRows();
+                if (player[1].downKey) {
+                    player[1].moveDown();
+                    player[1].checkCompletedRows();
+                }
             });
-            await new Promise(resolve => setTimeout(resolve, timer));
+            const elapsed = performance.now() - start;
+            const remaining = Math.max(0, timer - elapsed);
+            await new Promise(resolve => setTimeout(resolve, remaining));
         }
     }
 
-    // private async startMoveGameLoop(timer: number) {
-    //     while (!this.gameEnded) {
-    //         this.players.forEach(player => {
-    //             player[1].move();
-    //         });
-    //         await new Promise(resolve => setTimeout(resolve, timer));
-    //     }
-    // }
+    private async startMoveGameLoop(timer: number) {
+        while (!this.gameEnded) {
+            const start = performance.now();
+            for (const player of this.players) {
+                await player[1].move();
+            }
+            const elapsed = performance.now() - start;
+            const remaining = Math.max(0, timer - elapsed);
+            await new Promise(resolve => setTimeout(resolve, remaining));
+        }
+    }
 
 }
 
