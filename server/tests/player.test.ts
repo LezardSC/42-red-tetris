@@ -462,6 +462,33 @@ describe("Player", () => {
         });
     });
 
+    describe("getSpectrum", () => {
+        it("should return 0 for every column of an empty board", () => {
+            const player = createPlayer();
+
+            expect(player.getSpectrum()).toEqual(Array(10).fill(0));
+        });
+
+        it("should return the height of the highest block of each column", () => {
+            const player = createPlayer();
+
+            player.board[19 * 10 + 0] = Color.T;
+            player.board[15 * 10 + 3] = Color.I;
+            player.board[19 * 10 + 3] = Color.I;
+            player.board[0 * 10 + 9] = Color.O;
+
+            expect(player.getSpectrum()).toEqual([1, 0, 0, 5, 0, 0, 0, 0, 0, 20]);
+        });
+
+        it("should count penalty rows", () => {
+            const player = createPlayer();
+
+            player.addIdleRows(2);
+
+            expect(player.getSpectrum()).toEqual(Array(10).fill(2));
+        });
+    });
+
     describe("addIdleRows", () => {
         it("should add one row of idle cells", () => {
             const player = createPlayer();

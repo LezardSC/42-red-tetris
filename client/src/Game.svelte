@@ -1,6 +1,6 @@
 <script lang="ts">
-import { connection, game, sendKey, type PlayerState } from './lib/socket.svelte';
-import { EMPTY_CELLS, boardCells, spectrum, spectrumCells, type Cell } from './lib/board';
+import { game, sendKey } from './lib/socket.svelte';
+import { EMPTY_CELLS, COLS, boardCells, spectrumCells, type Cell } from './lib/board';
 
 type Player = { name: string; alive: boolean };
 
@@ -25,9 +25,11 @@ const COLORS: Record<Cell, string | null> = {
 const GAME_KEYS: string[] = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '];
 
 const alive: boolean = $derived(players.find(player => player.name === username)?.alive ?? false);
-const statePlayers: PlayerState[] = $derived(game.state?.players.map(([, state]) => state) ?? []);
-const me: PlayerState | undefined = $derived(game.state?.players.find(([id]) => id === connection.id)?.[1]);
-const cells: Cell[] = $derived(me ? boardCells(me.board, me.lost ? null : me.piece) : EMPTY_CELLS);
+const EMPTY_SPECTRUM: number[] = Array(COLS).fill(0);
+
+const cells: readonly Cell[] = $derived(
+    game.state ? boardCells(game.state.board, game.state.lost ? null : game.state.piece) : EMPTY_CELLS,
+);
 
 const opponents = $derived(
     players
@@ -35,7 +37,7 @@ const opponents = $derived(
         .map(player => ({
             name: player.name,
             alive: player.alive,
-            spectrum: spectrum(statePlayers.find(state => state.playerName === player.name)?.board ?? []),
+            spectrum: game.state?.opponents.find(opponent => opponent.name === player.name)?.spectrum ?? EMPTY_SPECTRUM,
         })),
 );
 
@@ -63,7 +65,7 @@ function releaseKeys(): void {
     <section class="glass-panel flex flex-col sm:flex-row gap-6 items-center sm:items-start">
         <div class="board own-board">
             {#each cells as cell, i (i)}
-                <div class="cell" class:block={cell !== '.'} style:--c={COLORS[cell]}></div>
+                <div class="cell" class:tetris-block={cell !== '.'} style:--c={COLORS[cell]}></div>
             {/each}
         </div>
 
@@ -148,10 +150,8 @@ function releaseKeys(): void {
         @apply bg-slate-900/60 rounded-[2px];
     }
 
-    .block {
-        background-color: var(--c);
-        border: 1px solid rgba(255, 255, 255, 0.6);
-        box-shadow: 0 0 6px var(--c), inset 0 0 4px rgba(255, 255, 255, 0.4);
+    .tetris-block {
+        @apply rounded-none;
     }
 
     .spectrum {
