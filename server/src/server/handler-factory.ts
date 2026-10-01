@@ -116,7 +116,12 @@ class HandlerFactory {
         return () => {
           let roomId: string | null = this.roomManager.getPlayerRoom(socket.id);
 
-          if (typeof roomId !== "string" || !this.regex.test(roomId)) {
+          if (typeof roomId !== "string") {
+            this.server.log.info(`Player ${socket.id} not found in any room`);
+            return;
+          }
+
+          if (!this.regex.test(roomId)) {
             this.server.log.info('Invalid room name.')
             return;
           }
@@ -134,7 +139,12 @@ class HandlerFactory {
         return () => {
           let roomId: string | null = this.roomManager.getPlayerRoom(socket.id);
 
-          if (typeof roomId !== "string" || !this.regex.test(roomId)) {
+          if (typeof roomId !== "string") {
+            this.server.log.info(`Player ${socket.id} not found in any room`);
+            return;
+          }
+
+          if (!this.regex.test(roomId)) {
             this.server.log.info('Invalid room name.')
             return;
           }

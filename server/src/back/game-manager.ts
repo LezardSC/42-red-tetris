@@ -10,7 +10,7 @@ class GameManager {
     games: Array<[string, Game]> = [];
     gameManagerEmitter: EventEmitter = new EventEmitter();
     statusHandler!: (status: GameStatus) => void;
-    gameEndHandler!: () => void;
+    gameEndHandler!: (winnerId: string) => void;
     playerLostHandler!: (playerId: string) => void;
     
     public constructor(server: FastifyInstance) {
@@ -22,7 +22,7 @@ class GameManager {
         let game: Game = new Game(userManager, gameId, playersId);
         this.statusHandler = (status: GameStatus) => this.sendGameStatus(gameId, status);
         this.playerLostHandler = (playerId: string) => this.gameManagerEmitter.emit('playerlost', gameId, playerId)
-        this.gameEndHandler = () => this.gameEnded(gameId);
+        this.gameEndHandler = (winnerId) => this.gameEnded(gameId, winnerId);
         game.gameEmitter.on("status", this.statusHandler);
         game.gameEmitter.on('playerlost', this.playerLostHandler);
         game.gameEmitter.on("gameend", this.gameEndHandler);
@@ -75,14 +75,14 @@ class GameManager {
         });
     }
 
-    private gameEnded(gameId: string) {
+    private gameEnded(gameId: string, winnerId: string) {
         try {
             const index = this.games.findIndex(([id]) => id === gameId);
             const gameTuple = this.games.find(([id]) => id === gameId);
             if (!gameTuple || index === -1) {
                 throw new Error(`Game was not found.`);
             }
-            this.gameManagerEmitter.emit('gameend', gameId);
+            this.gameManagerEmitter.emit('gameend', gameId, winnerId);
             gameTuple[1].gameEmitter.off('status', this.statusHandler);
             gameTuple[1].gameEmitter.off('gameend', this.gameEndHandler);
             this.games.splice(index, 1);
