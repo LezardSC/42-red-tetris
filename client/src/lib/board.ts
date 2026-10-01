@@ -9,7 +9,7 @@ export type ServerPiece = { center: Coordinates; tiles: Coordinates[]; color: Rg
 export const ROWS = 20;
 export const COLS = 10;
 
-export const EMPTY_CELLS: Cell[] = Array(ROWS * COLS).fill('.');
+export const EMPTY_CELLS: readonly Cell[] = Array(ROWS * COLS).fill('.');
 
 const CELL_BY_RGB: Record<string, Cell> = {
     '254,251,52': 'O',
@@ -40,14 +40,6 @@ export function boardCells(board: Rgb[], piece: ServerPiece | null): Cell[] {
     const covered = new Set(pieceIndexes(piece));
     const pieceCell = toCell(piece.color);
     return cells.map((cell, i) => (covered.has(i) ? pieceCell : cell));
-}
-
-export function spectrum(board: Rgb[]): number[] {
-    const cells = board.map(toCell);
-    return Array.from({ length: COLS }, (_, x) => {
-        const top = Array.from({ length: ROWS }, (_, y) => y).find(y => cells[y * COLS + x] !== '.');
-        return top === undefined ? 0 : ROWS - top;
-    });
 }
 
 export function spectrumCells(heights: number[]): boolean[] {

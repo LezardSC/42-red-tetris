@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import GameManager from "../src/back/game-manager.ts";
 import UserManager from "../src/back/user-manager.ts";
+import type Player from "../src/back/player.ts";
 import Fastify from "fastify";
 
 const userManager = new UserManager();
@@ -80,23 +81,44 @@ describe("GameManager", () => {
     });
 
     describe("game events", () => {
-        it("should send game status to socket.io", () => {
-            manager.startGame(userManager, "game-1", ["player-1"]);
+        it("should send each player their own board and their opponents' spectrums", () => {
+            manager.startGame(userManager, "game-1", ["player-1", "player-2"]);
 
             const gameTuple = manager.games[0];
             expect(gameTuple).toBeDefined();
             const game = gameTuple[1];
+            const [player1, player2] = game.players.map(([, player]) => player) as [Player, Player];
+            player1.playerName = "Alice";
+            player2.playerName = "Bob";
+            player2.addIdleRows(3);
+            player2.lost = true;
 
-            const status = {
+            const emits: Record<string, ReturnType<typeof vi.fn>> = {};
+            server.socketIO.to = vi.fn((id: string) => {
+                emits[id] = vi.fn();
+                return { emit: emits[id] };
+            });
+
+            game.gameEmitter.emit("status", { time: 42, players: game.players });
+
+            expect(server.socketIO.to).toHaveBeenCalledWith("player-1");
+            expect(server.socketIO.to).toHaveBeenCalledWith("player-2");
+            expect(server.socketIO.to).not.toHaveBeenCalledWith("game-1");
+
+            expect(emits["player-1"]).toHaveBeenCalledWith("gamestatus", {
                 time: 42,
-                players: [],
-            };
-
-            game.gameEmitter.emit("status", status);
-
-            expect(server.socketIO.to)
-                .toHaveBeenCalledWith("game-1");
-
+                board: player1.board,
+                piece: player1.piece,
+                lost: false,
+                opponents: [{ name: "Bob", spectrum: Array(10).fill(3), alive: false }],
+            });
+            expect(emits["player-2"]).toHaveBeenCalledWith("gamestatus", {
+                time: 42,
+                board: player2.board,
+                piece: player2.piece,
+                lost: true,
+                opponents: [{ name: "Alice", spectrum: Array(10).fill(0), alive: true }],
+            });
         });
 
         it("should remove the game when it ends", () => {
@@ -108,7 +130,7 @@ describe("GameManager", () => {
             expect(gameTuple).toBeDefined();
             const game = gameTuple[1];
 
-            game.gameEmitter.emit("gameend");
+            game.gameEmitter.emit("gameend", "player-1");
 
             expect(manager.games).toHaveLength(0);
 
@@ -131,9 +153,9 @@ describe("GameManager", () => {
             expect(gameTuple).toBeDefined();
             const game = gameTuple[1];
 
-            game.gameEmitter.emit("gameend");
+            game.gameEmitter.emit("gameend", "player-1");
 
-            expect(listener).toHaveBeenCalledWith("game-1");
+            expect(listener).toHaveBeenCalledWith("game-1", "player-1");
         });
     });
     describe("keyPressed", () => {

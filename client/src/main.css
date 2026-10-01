@@ -1,1 +1,26 @@
 @import "tailwindcss";
+
+@layer components {
+    .tetris-block {
+        position: relative;
+        box-sizing: border-box;
+        border: 1.5px solid rgba(255, 255, 255, 0.7);
+    }
+
+    .tetris-block::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-color: var(--c);
+        box-shadow: 0 0 10px var(--c);
+        opacity: 0.6;
+    }
+
+    .tetris-block::after {
+        content: '';
+        position: absolute;
+        inset: 1.5px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+    }
+}

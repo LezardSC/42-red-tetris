@@ -77,7 +77,8 @@ class HandlerFactory {
           return;
         }
 
-        if (this.userManager.getUserName(socket.id) === undefined) {
+        const name = this.userManager.getUserName(socket.id);
+        if (name === undefined) {
           this.server.log.info(`Socket ${socket.id} has no username and cannot join a room.`);
           reply('Please choose a username first.');
           return;
@@ -90,6 +91,12 @@ class HandlerFactory {
 
         if (this.gameManager.checkGameOngoing(roomId)) {
           reply('A game is in progress in this room. Try again after it ends.');
+          return;
+        }
+
+        if (this.roomManager.isNameTaken(roomId, name)) {
+          this.server.log.info(`Username ${name} is already taken in room ${roomId}.`);
+          reply('This username is already taken in this room.');
           return;
         }
     
@@ -116,7 +123,12 @@ class HandlerFactory {
         return () => {
           let roomId: string | null = this.roomManager.getPlayerRoom(socket.id);
 
-          if (typeof roomId !== "string" || !this.regex.test(roomId)) {
+          if (typeof roomId !== "string") {
+            this.server.log.info(`Player ${socket.id} not found in any room`);
+            return;
+          }
+
+          if (!this.regex.test(roomId)) {
             this.server.log.info('Invalid room name.')
             return;
           }
@@ -134,7 +146,12 @@ class HandlerFactory {
         return () => {
           let roomId: string | null = this.roomManager.getPlayerRoom(socket.id);
 
-          if (typeof roomId !== "string" || !this.regex.test(roomId)) {
+          if (typeof roomId !== "string") {
+            this.server.log.info(`Player ${socket.id} not found in any room`);
+            return;
+          }
+
+          if (!this.regex.test(roomId)) {
             this.server.log.info('Invalid room name.')
             return;
           }

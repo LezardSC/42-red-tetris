@@ -136,6 +136,16 @@ class Player {
         this.piece.center.y = Math.max(this.piece.center.y - nb, this.piece.startPos.y);
     }
 
+    // Height of the highest block of each column, 0 for an empty column (the falling piece is ignored).
+    public getSpectrum(): Array<number> {
+        const [width, height] = this.boardSize;
+        return Array.from({ length: width }, (_, x) => {
+            const top = Array.from({ length: height }, (_, y) => y)
+                .find(y => this.board[y * width + x] !== Color.Empty);
+            return top === undefined ? 0 : height - top;
+        });
+    }
+
     private managePieceDown() {
         for (let i: number = 0; i < this.piece.tiles.length; i++) {
             let tile: Coordinates | undefined = this.piece.tiles[i];

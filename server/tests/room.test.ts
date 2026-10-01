@@ -146,6 +146,33 @@ describe("Room", () => {
         });
     });
 
+    describe("hasPlayerNamed", () => {
+        it("should return true when a player in the room has this name", () => {
+            userManager.addUser("host", "Alice");
+            userManager.addUser("player-2", "Bob");
+            const room = createRoom();
+            room.addPlayer("player-2");
+
+            expect(room.hasPlayerNamed("Bob")).toBe(true);
+            expect(room.hasPlayerNamed("Alice")).toBe(true);
+        });
+
+        it("should return false when no player in the room has this name", () => {
+            userManager.addUser("host", "Alice");
+            userManager.addUser("outsider", "Bob");
+            const room = createRoom();
+
+            expect(room.hasPlayerNamed("Bob")).toBe(false);
+        });
+
+        it("should be case-sensitive", () => {
+            userManager.addUser("host", "Alice");
+            const room = createRoom();
+
+            expect(room.hasPlayerNamed("alice")).toBe(false);
+        });
+    });
+
     describe("removePlayer", () => {
         it("should remove a player from the room", () => {
             const room = createRoom();

@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import Game from "./game.ts"
 import type { GameStatus } from "./game.ts";
 import UserManager from "./user-manager.ts";
+import type { Piece } from "./piece.ts";
 
 
 class GameManager {
@@ -10,7 +11,7 @@ class GameManager {
     games: Array<[string, Game]> = [];
     gameManagerEmitter: EventEmitter = new EventEmitter();
     statusHandler!: (status: GameStatus) => void;
-    gameEndHandler!: () => void;
+    gameEndHandler!: (winnerId: string) => void;
     playerLostHandler!: (playerId: string) => void;
     
     public constructor(server: FastifyInstance) {
@@ -20,9 +21,9 @@ class GameManager {
     public startGame(userManager: UserManager, gameId: string, playersId: Array<string>) {
         
         let game: Game = new Game(userManager, gameId, playersId);
-        this.statusHandler = (status: GameStatus) => this.sendGameStatus(gameId, status);
+        this.statusHandler = (status: GameStatus) => this.sendGameStatus(status);
         this.playerLostHandler = (playerId: string) => this.gameManagerEmitter.emit('playerlost', gameId, playerId)
-        this.gameEndHandler = () => this.gameEnded(gameId);
+        this.gameEndHandler = (winnerId) => this.gameEnded(gameId, winnerId);
         game.gameEmitter.on("status", this.statusHandler);
         game.gameEmitter.on('playerlost', this.playerLostHandler);
         game.gameEmitter.on("gameend", this.gameEndHandler);
@@ -75,14 +76,14 @@ class GameManager {
         });
     }
 
-    private gameEnded(gameId: string) {
+    private gameEnded(gameId: string, winnerId: string) {
         try {
             const index = this.games.findIndex(([id]) => id === gameId);
             const gameTuple = this.games.find(([id]) => id === gameId);
             if (!gameTuple || index === -1) {
                 throw new Error(`Game was not found.`);
             }
-            this.gameManagerEmitter.emit('gameend', gameId);
+            this.gameManagerEmitter.emit('gameend', gameId, winnerId);
             gameTuple[1].gameEmitter.off('status', this.statusHandler);
             gameTuple[1].gameEmitter.off('gameend', this.gameEndHandler);
             this.games.splice(index, 1);
@@ -93,10 +94,35 @@ class GameManager {
         }
     }
 
-    private sendGameStatus(gameId: string, status: GameStatus) {
-        this.server.socketIO.to(gameId).emit('gamestatus', status)
+    // Each player gets their own board and piece, and only the spectrum of their opponents.
+    private sendGameStatus(status: GameStatus) {
+        status.players.forEach(([socketId, player]) => {
+            const playerStatus: PlayerStatus = {
+                time: status.time,
+                board: player.board,
+                piece: player.piece,
+                lost: player.lost,
+                opponents: status.players
+                    .filter(([id]) => id !== socketId)
+                    .map(([, opponent]) => ({
+                        name: opponent.playerName ?? '',
+                        spectrum: opponent.getSpectrum(),
+                        alive: !opponent.lost,
+                    })),
+            };
+            this.server.socketIO.to(socketId).emit('gamestatus', playerStatus);
+        });
     }
 
 }
 
+type PlayerStatus = {
+    time: number,
+    board: Array<Array<number>>,
+    piece: Piece,
+    lost: boolean,
+    opponents: Array<{ name: string, spectrum: Array<number>, alive: boolean }>,
+}
+
 export default GameManager
+export type { PlayerStatus }
