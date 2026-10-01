@@ -198,6 +198,62 @@ describe("Game", () => {
 
             game.gameEnded = true;
         });
+
+        it("should call twice movedown when down key", () => {
+            const game = new Game(
+                userManager,
+                "game-1",
+                ["player-1"]
+            );
+
+            const player = game.players[0]![1];
+            player.downKey = true;
+
+            const moveSpy = vi.spyOn(
+                player,
+                "move"
+            );
+
+            const moveDownSpy = vi.spyOn(
+                player,
+                "moveDown"
+            );
+
+            const rowsSpy = vi.spyOn(
+                player,
+                "checkCompletedRows"
+            );
+
+            game.start();
+
+            expect(moveSpy).toHaveBeenCalled();
+            expect(rowsSpy).toHaveBeenCalled();
+            expect(moveDownSpy).toHaveBeenCalledTimes(2);
+
+            game.gameEnded = true;
+        });
+
+        it("should call dropDown when spacekey", () => {
+            const game = new Game(
+                userManager,
+                "game-1",
+                ["player-1"]
+            );
+
+            const player = game.players[0]![1];
+            
+            const dropSpy = vi.spyOn(
+                player,
+                "dropDown"
+            );
+            
+            game.start();
+            game.keyPressed("player-1", " ");
+
+            expect(dropSpy).toHaveBeenCalled();
+
+            game.gameEnded = true;
+        });
     });
 
     describe("events", () => {
