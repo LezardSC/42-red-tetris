@@ -38,15 +38,15 @@ class Player {
             this.piece.center.y++;
         }
         else {
-            for (let i: number = 0; i < this.piece.tiles.length; i++) {
-                let tile: Coordinates | undefined = this.piece.tiles[i];
-                if (tile) {
-                    let tileAbsolute = new Coordinates(tile.x + this.piece.center.x, tile.y + this.piece.center.y)
-                    this.board[tileAbsolute.x + tileAbsolute.y * 10] = this.piece.color;
-                }
-            }
-            this.playerEmitter.emit('piecedown', this.piece.id);
+            this.managePieceDown();
         }
+    }
+
+    public dropDown() {
+        while(!this.checkCollision(Direction.Down)) {
+            this.piece.center.y++;
+        }
+        this.managePieceDown();
     }
 
     public move() {
@@ -98,6 +98,9 @@ class Player {
             case "ArrowRight":
                 this.rightKey = true;
                 break;
+            case " ":
+                this.dropDown();
+                break
         }
     }
 
@@ -131,6 +134,17 @@ class Player {
         }
 
         this.piece.center.y = Math.max(this.piece.center.y - nb, this.piece.startPos.y);
+    }
+
+    private managePieceDown() {
+        for (let i: number = 0; i < this.piece.tiles.length; i++) {
+            let tile: Coordinates | undefined = this.piece.tiles[i];
+            if (tile) {
+                let tileAbsolute = new Coordinates(tile.x + this.piece.center.x, tile.y + this.piece.center.y)
+                this.board[tileAbsolute.x + tileAbsolute.y * 10] = this.piece.color;
+            }
+        }
+        this.playerEmitter.emit('piecedown', this.piece.id);
     }
 
     private deleteRow(row: number) {
