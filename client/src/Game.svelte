@@ -22,7 +22,19 @@ const COLORS: Record<Cell, string | null> = {
     '.': null,
 };
 
-const GAME_KEYS: string[] = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '];
+// WASD uses physical positions, so it's ZQSD on an AZERTY keyboard.
+const GAME_KEYS: Readonly<Record<string, string>> = {
+    ArrowLeft: 'ArrowLeft',
+    ArrowRight: 'ArrowRight',
+    ArrowUp: 'ArrowUp',
+    ArrowDown: 'ArrowDown',
+    KeyA: 'ArrowLeft',
+    KeyD: 'ArrowRight',
+    KeyW: 'ArrowUp',
+    KeyS: 'ArrowDown',
+    Space: ' ',
+};
+const SERVER_KEYS: string[] = [...new Set(Object.values(GAME_KEYS))];
 
 const alive: boolean = $derived(players.find(player => player.name === username)?.alive ?? false);
 const EMPTY_SPECTRUM: number[] = Array(COLS).fill(0);
@@ -42,19 +54,21 @@ const opponents = $derived(
 );
 
 function onKeyDown(event: KeyboardEvent): void {
-    if (!GAME_KEYS.includes(event.key)) return;
+    const key: string | undefined = GAME_KEYS[event.code];
+    if (!key) return;
     event.preventDefault();
-    if (!event.repeat && alive) sendKey('keydown', event.key);
+    if (!event.repeat && alive) sendKey('keydown', key);
 }
 
 function onKeyUp(event: KeyboardEvent): void {
-    if (!GAME_KEYS.includes(event.key)) return;
+    const key: string | undefined = GAME_KEYS[event.code];
+    if (!key) return;
     event.preventDefault();
-    sendKey('keyup', event.key);
+    sendKey('keyup', key);
 }
 
 function releaseKeys(): void {
-    GAME_KEYS.forEach(key => sendKey('keyup', key));
+    SERVER_KEYS.forEach(key => sendKey('keyup', key));
 }
 </script>
 
