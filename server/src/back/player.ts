@@ -69,7 +69,8 @@ class Player {
         let deletedRows: number = 0;
         for (let i: number = 0; i < this.boardSize[1]; i++) {
             for (let j: number = 0; j < this.boardSize[0]; j++) {
-                if (this.board[i * 10 + j] === Color.Empty) {
+                // Penalty rows are indestructible: a row holding an Idle cell is never cleared.
+                if (this.board[i * 10 + j] === Color.Empty || this.board[i * 10 + j] === Color.Idle) {
                     break;
                 }
                 if (j == this.boardSize[0] - 1) {

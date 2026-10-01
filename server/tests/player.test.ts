@@ -460,6 +460,51 @@ describe("Player", () => {
 
             expect(listener).not.toHaveBeenCalled();
         });
+
+        it("should never delete penalty rows", () => {
+            const player = createPlayer();
+
+            player.addIdleRows(2);
+
+            expect(player.checkCompletedRows()).toBe(0);
+            expect(
+                player.board.slice(180),
+            ).toEqual(
+                new Array(20).fill(Color.Idle),
+            );
+        });
+
+        it("should not send penalty rows back to opponents", () => {
+            const player = createPlayer();
+            const listener = vi.fn();
+
+            player.playerEmitter.on(
+                "deletedrows",
+                listener,
+            );
+            player.addIdleRows(3);
+            player.checkCompletedRows();
+
+            expect(listener).not.toHaveBeenCalled();
+        });
+
+        it("should delete a completed row above penalty rows and keep them", () => {
+            const player = createPlayer();
+
+            player.addIdleRows(1);
+            player.board[175] = Color.T;
+            for (let i = 180; i < 190; i++) {
+                player.board[i] = Color.O;
+            }
+
+            expect(player.checkCompletedRows()).toBe(1);
+            expect(player.board[185]).toBe(Color.T);
+            expect(
+                player.board.slice(190),
+            ).toEqual(
+                new Array(10).fill(Color.Idle),
+            );
+        });
     });
 
     describe("getSpectrum", () => {
