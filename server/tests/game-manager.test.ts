@@ -130,7 +130,7 @@ describe("GameManager", () => {
             expect(gameTuple).toBeDefined();
             const game = gameTuple[1];
 
-            game.gameEmitter.emit("gameend");
+            game.gameEmitter.emit("gameend", "player-1");
 
             expect(manager.games).toHaveLength(0);
 
@@ -153,9 +153,9 @@ describe("GameManager", () => {
             expect(gameTuple).toBeDefined();
             const game = gameTuple[1];
 
-            game.gameEmitter.emit("gameend");
+            game.gameEmitter.emit("gameend", "player-1");
 
-            expect(listener).toHaveBeenCalledWith("game-1");
+            expect(listener).toHaveBeenCalledWith("game-1", "player-1");
         });
     });
     describe("keyPressed", () => {
