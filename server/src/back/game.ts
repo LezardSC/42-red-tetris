@@ -39,8 +39,8 @@ class Game {
 
     public start() {
         this.startEmissionLoop(50);
-        this.startMainGameLoop(200);
-        this.startMoveGameLoop(125);
+        this.startMainGameLoop(500);
+        this.startMoveGameLoop(100);
     }
 
     public keyPressed(playerId: string, key: string) {
