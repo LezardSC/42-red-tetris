@@ -62,8 +62,6 @@ server.ready().then(() => {
     socket.on('start', handlerFactory.createStartHandler(socket));
     socket.on('keydown', handlerFactory.createKeyPressedHandler(socket));
     socket.on('keyup', handlerFactory.createKeyReleasedHandler(socket));
-    socket.on('mocklose', handlerFactory.createMockLoseHandler(socket));
-    socket.on('mockwin', handlerFactory.createMockWinHandler(socket));
     
     server.log.info(`Socket ${socket.id} connected.`);
     socket.emit('rooms', roomManager.getAllRoomStatus());

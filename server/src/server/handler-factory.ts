@@ -168,19 +168,6 @@ class HandlerFactory {
         }
     }
 
-    // MOCK: stand-ins for topping out / winning until the client can play. Remove before evaluation.
-    public createMockLoseHandler(socket: Socket) {
-      return () => {
-        this.gameManager.removePlayer(socket.id);
-      }
-    }
-
-    public createMockWinHandler(socket: Socket) {
-      return () => {
-        this.gameManager.forceWin(socket.id);
-      }
-    }
-
     public createKeyPressedHandler(socket: Socket) {
       return (key: any) => {
         this.gameManager.keyPressed(socket.id, key);

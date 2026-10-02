@@ -56,7 +56,6 @@ describe("HandlerFactory", () => {
             removePlayer: vi.fn(),
             checkGameOngoing: vi.fn(),
             startGame: vi.fn(),
-            forceWin: vi.fn(),
             keyPressed: vi.fn(),
             keyReleased: vi.fn(),
         } as unknown as GameManager;
@@ -1075,30 +1074,6 @@ describe("HandlerFactory", () => {
 
             expect(gameManager.startGame)
                 .not.toHaveBeenCalled();
-        });
-    });
-
-    describe("createMockLoseHandler", () => {
-        it("should remove the player from the game", () => {
-            const handler =
-                factory.createMockLoseHandler(socket);
-
-            handler();
-
-            expect(gameManager.removePlayer)
-                .toHaveBeenCalledWith("socket-1");
-        });
-    });
-
-    describe("createMockWinHandler", () => {
-        it("should force the player to win", () => {
-            const handler =
-                factory.createMockWinHandler(socket);
-
-            handler();
-
-            expect(gameManager.forceWin)
-                .toHaveBeenCalledWith("socket-1");
         });
     });
 

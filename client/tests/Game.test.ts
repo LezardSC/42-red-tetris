@@ -98,48 +98,63 @@ describe('Game: boards', () => {
 describe('Game: keyboard', () => {
     it('sends game keys to the server and prevents the default action', () => {
         renderGame();
-        const down = new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true });
+        const down = new KeyboardEvent('keydown', { key: 'ArrowLeft', code: 'ArrowLeft', cancelable: true });
         window.dispatchEvent(down);
         expect(down.defaultPrevented).toBe(true);
-        fireEvent.keyUp(window, { key: 'ArrowLeft' });
-        fireEvent.keyDown(window, { key: ' ' });
+        fireEvent.keyUp(window, { key: 'ArrowLeft', code: 'ArrowLeft' });
+        fireEvent.keyDown(window, { key: ' ', code: 'Space' });
         expect(ctx.fake.socket.emit).toHaveBeenCalledWith('keydown', 'ArrowLeft');
         expect(ctx.fake.socket.emit).toHaveBeenCalledWith('keyup', 'ArrowLeft');
         expect(ctx.fake.socket.emit).toHaveBeenCalledWith('keydown', ' ');
     });
 
+    it('maps WASD to the arrow keys by physical position (ZQSD on AZERTY)', () => {
+        renderGame();
+        const down = new KeyboardEvent('keydown', { key: 'z', code: 'KeyW', cancelable: true });
+        window.dispatchEvent(down);
+        expect(down.defaultPrevented).toBe(true);
+        fireEvent.keyDown(window, { key: 'q', code: 'KeyA' });
+        fireEvent.keyDown(window, { key: 's', code: 'KeyS' });
+        fireEvent.keyUp(window, { key: 'd', code: 'KeyD' });
+        expect(ctx.fake.socket.emit).toHaveBeenCalledWith('keydown', 'ArrowUp');
+        expect(ctx.fake.socket.emit).toHaveBeenCalledWith('keydown', 'ArrowLeft');
+        expect(ctx.fake.socket.emit).toHaveBeenCalledWith('keydown', 'ArrowDown');
+        expect(ctx.fake.socket.emit).toHaveBeenCalledWith('keyup', 'ArrowRight');
+    });
+
     it('ignores other keys', () => {
         renderGame();
-        const down = new KeyboardEvent('keydown', { key: 'a', cancelable: true });
+        const down = new KeyboardEvent('keydown', { key: 'e', code: 'KeyE', cancelable: true });
         window.dispatchEvent(down);
-        fireEvent.keyUp(window, { key: 'a' });
+        fireEvent.keyUp(window, { key: 'e', code: 'KeyE' });
         expect(down.defaultPrevented).toBe(false);
         expect(ctx.fake.socket.emit).not.toHaveBeenCalled();
     });
 
     it('ignores the browser auto-repeat', () => {
         renderGame();
-        fireEvent.keyDown(window, { key: 'ArrowDown', repeat: true });
+        fireEvent.keyDown(window, { key: 'ArrowDown', code: 'ArrowDown', repeat: true });
         expect(ctx.fake.socket.emit).not.toHaveBeenCalled();
     });
 
     it('does not send key presses once knocked out', () => {
         renderGame([{ name: 'alice', alive: false }]);
-        fireEvent.keyDown(window, { key: 'ArrowUp' });
+        fireEvent.keyDown(window, { key: 'ArrowUp', code: 'ArrowUp' });
         expect(ctx.fake.socket.emit).not.toHaveBeenCalled();
     });
 
     it('does not send key presses for a player missing from the list', () => {
         renderGame([{ name: 'bob', alive: true }]);
-        fireEvent.keyDown(window, { key: 'ArrowUp' });
+        fireEvent.keyDown(window, { key: 'ArrowUp', code: 'ArrowUp' });
         expect(ctx.fake.socket.emit).not.toHaveBeenCalled();
     });
 
-    it('releases every key when the window loses focus', () => {
+    it('releases every key once when the window loses focus', () => {
         renderGame();
         fireEvent.blur(window);
         ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' '].forEach(key =>
             expect(ctx.fake.socket.emit).toHaveBeenCalledWith('keyup', key),
         );
+        expect(ctx.fake.socket.emit).toHaveBeenCalledTimes(5);
     });
 });

@@ -67,15 +67,6 @@ class GameManager {
         this.games.forEach(([, game]) => game.forfeit(playerId));
     }
 
-    // MOCK: makes every opponent of playerId lose, until the game itself is playable.
-    public forceWin(playerId: string) {
-        this.games.forEach(([, game]) => {
-            if (game.players.some(([id]) => id == playerId)) {
-                game.players.filter(([id]) => id != playerId).forEach(([id]) => game.forfeit(id));
-            }
-        });
-    }
-
     private gameEnded(gameId: string, winnerId: string) {
         try {
             const index = this.games.findIndex(([id]) => id === gameId);
