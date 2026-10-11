@@ -1,6 +1,9 @@
 import EventEmitter from "events";
 import { Piece, Coordinates, Color } from "./piece.ts";
 
+const SHIFT_DELAY = 170;
+const SHIFT_REPEAT = 50;
+const SOFT_DROP_REPEAT = 50;
 
 class Player {
     playerId!: string;
@@ -13,6 +16,9 @@ class Player {
     rightKey: boolean = false;
     upKey: boolean = false;
     downKey: boolean = false;
+    shiftHeldSince: number = 0;
+    lastShift: number = 0;
+    lastSoftDrop: number = 0;
     playerEmitter: EventEmitter = new EventEmitter();
     
     public constructor(playerName: string | undefined, playerId: string, boardSize: [number, number], firstPiece: string | undefined) {
@@ -49,20 +55,15 @@ class Player {
         this.managePieceDown();
     }
 
-    public move() {
-
-        if (this.rightKey && !this.checkCollision(Direction.Right)) {
-            this.piece.center.x++;
+    public move(now: number = Date.now()) {
+        if (this.lost)
+            return;
+        if ((this.leftKey || this.rightKey) && now - this.shiftHeldSince >= SHIFT_DELAY && now - this.lastShift >= SHIFT_REPEAT) {
+            this.shift(now);
         }
-        if (this.leftKey && !this.checkCollision(Direction.Left)) {
-            this.piece.center.x--;
+        if (this.downKey && now - this.lastSoftDrop >= SOFT_DROP_REPEAT) {
+            this.softDrop(now);
         }
-        if (this.upKey && !this.checkCollision(Direction.Rotate)) {
-            this.piece.tiles.forEach(tile => {
-                tile.rotate(-90);
-            });
-        }
-        
     }
 
     public checkCompletedRows(): number {
@@ -85,22 +86,34 @@ class Player {
         return deletedRows;
     }
 
-    public keyPressed(key: string) {
+    public keyPressed(key: string, now: number = Date.now()) {
+        if (this.lost)
+            return;
         switch(key) {
             case "ArrowDown":
+                if (this.downKey)
+                    break;
                 this.downKey = true;
+                this.softDrop(now);
                 break;
             case "ArrowUp":
+                if (this.upKey)
+                    break;
                 this.upKey = true;
+                this.rotate();
                 break;
             case "ArrowLeft":
-                this.leftKey = true;
-                break;
             case "ArrowRight":
-                this.rightKey = true;
+                if (key === "ArrowLeft" ? this.leftKey : this.rightKey)
+                    break;
+                this.leftKey = key === "ArrowLeft";
+                this.rightKey = key === "ArrowRight";
+                this.shiftHeldSince = now;
+                this.shift(now);
                 break;
             case " ":
                 this.dropDown();
+                this.checkCompletedRows();
                 break
         }
     }
@@ -145,6 +158,30 @@ class Player {
                 .find(y => this.board[y * width + x] !== Color.Empty);
             return top === undefined ? 0 : height - top;
         });
+    }
+
+    private shift(now: number) {
+        this.lastShift = now;
+        if (this.rightKey && !this.checkCollision(Direction.Right)) {
+            this.piece.center.x++;
+        }
+        if (this.leftKey && !this.checkCollision(Direction.Left)) {
+            this.piece.center.x--;
+        }
+    }
+
+    private softDrop(now: number) {
+        this.lastSoftDrop = now;
+        this.moveDown();
+        this.checkCompletedRows();
+    }
+
+    private rotate() {
+        if (!this.checkCollision(Direction.Rotate)) {
+            this.piece.tiles.forEach(tile => {
+                tile.rotate(-90);
+            });
+        }
     }
 
     private managePieceDown() {
