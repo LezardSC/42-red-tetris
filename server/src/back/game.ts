@@ -40,7 +40,7 @@ class Game {
     public start() {
         this.startEmissionLoop(50);
         this.startMainGameLoop(500);
-        this.startMoveGameLoop(100);
+        this.startMoveGameLoop(25);
     }
 
     public keyPressed(playerId: string, key: string) {
@@ -94,10 +94,6 @@ class Game {
             this.players.filter(player => !player[1].lost).forEach(async player => {
                 player[1].moveDown();
                 player[1].checkCompletedRows();
-                if (player[1].downKey) {
-                    player[1].moveDown();
-                    player[1].checkCompletedRows();
-                }
             });
             const elapsed = performance.now() - start;
             const remaining = Math.max(0, timer - elapsed);
