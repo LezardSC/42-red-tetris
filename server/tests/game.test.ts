@@ -312,6 +312,37 @@ describe("Game", () => {
         });
     });
 
+    describe("next piece", () => {
+        it("should give each player the second piece as next piece", () => {
+            const game = new Game(userManager, "game-1", ["player-1", "player-2"]);
+
+            game.players.forEach(([, player]) => {
+                expect(player.nextPiece).toBe(game.pieceManager.nextPieces[1]);
+            });
+        });
+
+        it("should move to the following piece when a piece goes down", () => {
+            const game = new Game(userManager, "game-1", ["player-1"]);
+            const player = game.players[0]![1];
+
+            player.playerEmitter.emit("piecedown", 0);
+
+            expect(player.piece.type).toBe(game.pieceManager.nextPieces[1]);
+            expect(player.nextPiece).toBe(game.pieceManager.nextPieces[2]);
+        });
+
+        it("should generate a new set before the next piece runs out", () => {
+            const game = new Game(userManager, "game-1", ["player-1"]);
+            const player = game.players[0]![1];
+
+            player.playerEmitter.emit("piecedown", 5);
+
+            expect(game.pieceManager.nextPieces).toHaveLength(14);
+            expect(player.piece.type).toBe(game.pieceManager.nextPieces[6]);
+            expect(player.nextPiece).toBe(game.pieceManager.nextPieces[7]);
+        });
+    });
+
     describe("player events", () => {
         it("should add idle rows to other players", () => {
             const game = new Game(
