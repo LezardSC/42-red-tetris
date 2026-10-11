@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLS, EMPTY_CELLS, ROWS, boardCells, spectrumCells, toCell, type Rgb, type ServerPiece } from '../src/lib/board';
+import { COLS, EMPTY_CELLS, ROWS, boardCells, pieceShape, spectrumCells, toCell, type Rgb, type ServerPiece } from '../src/lib/board';
 
 const WHITE: Rgb = [255, 255, 255];
 const YELLOW: Rgb = [254, 251, 52];
@@ -74,6 +74,25 @@ describe('boardCells', () => {
         const copy = [...board];
         boardCells(board, { center: { x: 0, y: 0 }, tiles: [{ x: 0, y: 0 }], color: YELLOW });
         expect(board).toEqual(copy);
+    });
+});
+
+describe('pieceShape', () => {
+    it('lays out a piece row by row', () => {
+        expect(pieceShape('T')).toEqual({ cols: 3, cells: ['.', 'T', '.', 'T', 'T', 'T'] });
+        expect(pieceShape('I')).toEqual({ cols: 4, cells: ['I', 'I', 'I', 'I'] });
+    });
+
+    it('knows the seven pieces', () => {
+        ['I', 'O', 'T', 'S', 'Z', 'J', 'L'].forEach(type => {
+            expect(pieceShape(type)?.cells.filter(cell => cell === type)).toHaveLength(4);
+        });
+    });
+
+    it('returns null for a missing or unknown piece', () => {
+        expect(pieceShape(null)).toBeNull();
+        expect(pieceShape(undefined)).toBeNull();
+        expect(pieceShape('X')).toBeNull();
     });
 });
 

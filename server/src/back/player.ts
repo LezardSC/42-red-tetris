@@ -17,6 +17,7 @@ class Player {
     rightKey: boolean = false;
     upKey: boolean = false;
     downKey: boolean = false;
+    nextPiece: string | undefined;
     shiftHeldSince: number = 0;
     lastShift: number = 0;
     lastSoftDrop: number = 0;
