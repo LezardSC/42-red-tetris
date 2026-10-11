@@ -20,12 +20,13 @@ const PLAYERS = [
     { name: 'carol', alive: false },
 ];
 
-function gameStatus(lost = false) {
+function gameStatus(lost = false, nextPiece: string | null = 'T') {
     const board: Rgb[] = Array.from({ length: ROWS * COLS }, (_, i) => (i >= (ROWS - 1) * COLS ? GREY : WHITE));
     return {
         time: 0,
         board,
         piece: { center: { x: 4, y: 0 }, tiles: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }], color: YELLOW },
+        nextPiece,
         lost,
         opponents: [{ name: 'bob', spectrum: [3, 0, 0, 0, 0, 0, 0, 0, 0, 0], alive: true }],
     };
@@ -92,6 +93,30 @@ describe('Game: boards', () => {
         renderGame(PLAYERS, onLeave);
         await user.click(screen.getByRole('button', { name: 'Leave' }));
         expect(onLeave).toHaveBeenCalled();
+    });
+});
+
+describe('Game: next piece', () => {
+    const nextBlocks = (container: HTMLElement) => container.querySelectorAll('.next-board .tetris-block');
+
+    it('shows nothing before the first gamestatus', () => {
+        const { container } = renderGame();
+        expect(container.querySelector('.next-board')).toBeNull();
+    });
+
+    it('shows the next piece', () => {
+        const { container } = renderGame();
+        ctx.fake.serverEmit('gamestatus', gameStatus(false, 'T'));
+        flushSync();
+        expect(nextBlocks(container)).toHaveLength(4);
+        expect(container.querySelectorAll('.next-board .cell')).toHaveLength(6);
+    });
+
+    it('hides the next piece once the player lost', () => {
+        const { container } = renderGame();
+        ctx.fake.serverEmit('gamestatus', gameStatus(true, 'T'));
+        flushSync();
+        expect(container.querySelector('.next-board')).toBeNull();
     });
 });
 

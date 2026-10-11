@@ -16,15 +16,18 @@ class Game {
         this.gameId = gameId;
         this.pieceManager = new PieceManager();
         playersId.forEach(id => {
-            this.players.push([id, new Player(userManager.getUserName(id), id, [10, 20], this.pieceManager.nextPieces[0])])
+            const player = new Player(userManager.getUserName(id), id, [10, 20], this.pieceManager.nextPieces[0]);
+            player.nextPiece = this.pieceManager.nextPieces[1];
+            this.players.push([id, player])
         });
 
         this.players.forEach((player) => player[1].playerEmitter.on('piecedown', (id) => {
             if (player[1].lost)
                 return;
-            if (id === this.pieceManager.nextPieces.length - 1)
+            if (id + 2 >= this.pieceManager.nextPieces.length)
                 this.pieceManager.generateNewSet();
             player[1].piece = new Piece(4, 1, this.pieceManager.nextPieces[id + 1], id + 1)
+            player[1].nextPiece = this.pieceManager.nextPieces[id + 2];
         }));
 
         this.players.forEach((player) => player[1].playerEmitter.on('lost', (id) => this.gameEmitter.emit('playerlost', id)));

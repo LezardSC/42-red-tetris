@@ -1,6 +1,6 @@
 <script lang="ts">
 import { game, sendKey } from './lib/socket.svelte';
-import { EMPTY_CELLS, COLS, boardCells, spectrumCells, type Cell } from './lib/board';
+import { EMPTY_CELLS, COLS, boardCells, pieceShape, spectrumCells, type Cell } from './lib/board';
 
 type Player = { name: string; alive: boolean };
 
@@ -42,6 +42,8 @@ const EMPTY_SPECTRUM: number[] = Array(COLS).fill(0);
 const cells: readonly Cell[] = $derived(
     game.state ? boardCells(game.state.board, game.state.lost ? null : game.state.piece) : EMPTY_CELLS,
 );
+
+const next = $derived(game.state && !game.state.lost ? pieceShape(game.state.nextPiece) : null);
 
 const opponents = $derived(
     players
@@ -87,6 +89,19 @@ function releaseKeys(): void {
             <div class="flex flex-col gap-2">
                 <p class="side-label">Player</p>
                 <p class="font-bold text-cyan-400 break-all">{username}</p>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <p class="side-label">Next</p>
+                <div class="next-box">
+                    {#if next}
+                        <div class="board next-board" style:--cols={next.cols}>
+                            {#each next.cells as cell, i (i)}
+                                <div class="cell" class:empty={cell === '.'} class:tetris-block={cell !== '.'} style:--c={COLORS[cell]}></div>
+                            {/each}
+                        </div>
+                    {/if}
+                </div>
             </div>
 
             <div class="flex flex-col gap-2 self-start">
@@ -152,6 +167,18 @@ function releaseKeys(): void {
         /* Keep the 20 rows on screen whatever the viewport height */
         --cell: clamp(0.9rem, calc((100vh - 16rem) / 20), 1.75rem);
         @apply p-1 bg-slate-950/80 border border-slate-700 rounded shadow-[0_0_25px_rgba(0,255,255,0.15)];
+    }
+
+    .next-box {
+        @apply flex items-center justify-center w-24 h-16 bg-slate-950/80 border border-slate-700 rounded;
+    }
+
+    .next-board {
+        --cell: 1.1rem;
+    }
+
+    .next-board .empty {
+        @apply bg-transparent;
     }
 
     .mini-board {

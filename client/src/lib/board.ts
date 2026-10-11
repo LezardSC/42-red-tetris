@@ -42,6 +42,24 @@ export function boardCells(board: Rgb[], piece: ServerPiece | null): Cell[] {
     return cells.map((cell, i) => (covered.has(i) ? pieceCell : cell));
 }
 
+// Spawn orientation of each piece, as drawn by the server.
+const PIECE_SHAPES: Record<string, string[]> = {
+    I: ['IIII'],
+    O: ['OO', 'OO'],
+    T: ['.T.', 'TTT'],
+    S: ['.SS', 'SS.'],
+    Z: ['ZZ.', '.ZZ'],
+    J: ['J..', 'JJJ'],
+    L: ['..L', 'LLL'],
+};
+
+// Cells of a piece preview, row by row, or null for an unknown piece type.
+export function pieceShape(type: string | null | undefined): { cols: number; cells: Cell[] } | null {
+    const rows = type ? PIECE_SHAPES[type] : undefined;
+    if (!rows) return null;
+    return { cols: rows[0].length, cells: rows.join('').split('') as Cell[] };
+}
+
 export function spectrumCells(heights: number[]): boolean[] {
     return Array.from({ length: ROWS }, (_, r) => r).flatMap(r => heights.map(height => ROWS - r <= height));
 }
