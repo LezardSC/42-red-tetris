@@ -321,7 +321,7 @@ describe("Player", () => {
             expect(player.piece.center.x).toBe(initialX);
         });
 
-        it("should rotate when upKey is pressed", () => {
+        it("should not rotate when upKey is held", () => {
             const player = createPlayer(
                 "Player",
                 "player-1",
@@ -329,26 +329,6 @@ describe("Player", () => {
             );
 
             player.upKey = true;
-
-            const originalTiles = player.piece.tiles.map(
-                tile => [tile.x, tile.y],
-            );
-
-            player.move();
-
-            const rotatedTiles = player.piece.tiles.map(
-                tile => [tile.x, tile.y],
-            );
-
-            expect(rotatedTiles).not.toEqual(originalTiles);
-        });
-
-        it("should not rotate when upKey is not pressed", () => {
-            const player = createPlayer(
-                "Player",
-                "player-1",
-                PieceType.T,
-            );
 
             const originalTiles = player.piece.tiles.map(
                 tile => [tile.x, tile.y],
@@ -363,19 +343,167 @@ describe("Player", () => {
             ).toEqual(originalTiles);
         });
 
-        it("should process right movement and rotation", () => {
+        it("should not move a piece of a player who lost", () => {
             const player = createPlayer();
 
+            player.lost = true;
             player.rightKey = true;
-            player.upKey = true;
 
             const initialX = player.piece.center.x;
 
             player.move();
 
-            expect(player.piece.center.x).toBe(
-                initialX + 1,
-            );
+            expect(player.piece.center.x).toBe(initialX);
+        });
+    });
+
+    describe("responsive controls", () => {
+        const tilesOf = (player: Player) =>
+            // "+ 0" turns the -0 produced by rotations into 0.
+            player.piece.tiles.map(tile => [tile.x + 0, tile.y + 0]);
+
+        it("should shift right as soon as ArrowRight is pressed", () => {
+            const player = createPlayer();
+            const initialX = player.piece.center.x;
+
+            player.keyPressed("ArrowRight", 1000);
+
+            expect(player.piece.center.x).toBe(initialX + 1);
+        });
+
+        it("should shift left as soon as ArrowLeft is pressed", () => {
+            const player = createPlayer();
+            const initialX = player.piece.center.x;
+
+            player.keyPressed("ArrowLeft", 1000);
+
+            expect(player.piece.center.x).toBe(initialX - 1);
+        });
+
+        it("should keep the shift of a quick tap released before the next tick", () => {
+            const player = createPlayer();
+            const initialX = player.piece.center.x;
+
+            player.keyPressed("ArrowRight", 1000);
+            player.keyReleased("ArrowRight");
+            player.move(1010);
+
+            expect(player.piece.center.x).toBe(initialX + 1);
+        });
+
+        it("should wait before auto-repeating a held shift", () => {
+            const player = createPlayer();
+            const initialX = player.piece.center.x;
+
+            player.keyPressed("ArrowRight", 1000);
+            player.move(1100);
+
+            expect(player.piece.center.x).toBe(initialX + 1);
+        });
+
+        it("should auto-repeat a held shift after the delay", () => {
+            const player = createPlayer();
+            const initialX = player.piece.center.x;
+
+            player.keyPressed("ArrowRight", 1000);
+            player.move(1170);
+            player.move(1220);
+
+            expect(player.piece.center.x).toBe(initialX + 3);
+        });
+
+        it("should not repeat a key press already held", () => {
+            const player = createPlayer();
+            const initialX = player.piece.center.x;
+
+            player.keyPressed("ArrowRight", 1000);
+            player.keyPressed("ArrowRight", 1010);
+
+            expect(player.piece.center.x).toBe(initialX + 1);
+        });
+
+        it("should give priority to the last pressed direction", () => {
+            const player = createPlayer();
+            const initialX = player.piece.center.x;
+
+            player.keyPressed("ArrowRight", 1000);
+            player.keyPressed("ArrowLeft", 1010);
+
+            expect(player.piece.center.x).toBe(initialX);
+            expect(player.leftKey).toBe(true);
+            expect(player.rightKey).toBe(false);
+        });
+
+        it("should rotate once when ArrowUp is pressed", () => {
+            const player = createPlayer("Player", "player-1", PieceType.T);
+            const originalTiles = tilesOf(player);
+
+            player.keyPressed("ArrowUp", 1000);
+            const rotatedTiles = tilesOf(player);
+            player.move(2000);
+
+            expect(rotatedTiles).not.toEqual(originalTiles);
+            expect(tilesOf(player)).toEqual(rotatedTiles);
+        });
+
+        it("should rotate again after ArrowUp is released and pressed", () => {
+            const player = createPlayer("Player", "player-1", PieceType.T);
+            const originalTiles = tilesOf(player);
+
+            player.keyPressed("ArrowUp", 1000);
+            player.keyReleased("ArrowUp");
+            player.keyPressed("ArrowUp", 1100);
+            player.keyReleased("ArrowUp");
+            player.keyPressed("ArrowUp", 1200);
+            player.keyReleased("ArrowUp");
+            player.keyPressed("ArrowUp", 1300);
+
+            expect(tilesOf(player)).toEqual(originalTiles);
+        });
+
+        it("should drop one row as soon as ArrowDown is pressed", () => {
+            const player = createPlayer();
+            const initialY = player.piece.center.y;
+
+            player.keyPressed("ArrowDown", 1000);
+
+            expect(player.piece.center.y).toBe(initialY + 1);
+        });
+
+        it("should keep soft dropping while ArrowDown is held", () => {
+            const player = createPlayer();
+            const initialY = player.piece.center.y;
+
+            player.keyPressed("ArrowDown", 1000);
+            player.move(1025);
+            player.move(1050);
+            player.move(1100);
+
+            expect(player.piece.center.y).toBe(initialY + 3);
+        });
+
+        it("should clear completed rows right after a hard drop", () => {
+            const player = createPlayer("Player", "player-1", PieceType.I);
+
+            for (let x = 0; x < 10; x++) {
+                if (x < 3 || x > 6)
+                    player.board[19 * 10 + x] = Color.O;
+            }
+
+            player.keyPressed(" ", 1000);
+
+            expect(player.board.slice(190).every(color => color === Color.Empty)).toBe(true);
+        });
+
+        it("should ignore keys once the player lost", () => {
+            const player = createPlayer();
+            const initialX = player.piece.center.x;
+
+            player.lost = true;
+            player.keyPressed("ArrowRight", 1000);
+
+            expect(player.rightKey).toBe(false);
+            expect(player.piece.center.x).toBe(initialX);
         });
     });
 
