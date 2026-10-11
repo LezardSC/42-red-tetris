@@ -4,6 +4,7 @@ import { Piece, Coordinates, Color } from "./piece.ts";
 const SHIFT_DELAY = 170;
 const SHIFT_REPEAT = 50;
 const SOFT_DROP_REPEAT = 50;
+const ROTATION_KICKS: Array<[number, number]> = [[0, 0], [-1, 0], [1, 0], [-2, 0], [2, 0], [0, -1]];
 
 class Player {
     playerId!: string;
@@ -177,11 +178,26 @@ class Player {
     }
 
     private rotate() {
-        if (!this.checkCollision(Direction.Rotate)) {
-            this.piece.tiles.forEach(tile => {
-                tile.rotate(-90);
-            });
-        }
+        const rotated = this.piece.tiles.map(tile => {
+            const copy = new Coordinates(tile.x, tile.y);
+            copy.rotate(-90);
+            return copy;
+        });
+        const kick = ROTATION_KICKS.find(([dx, dy]) => this.fits(rotated, this.piece.center.x + dx, this.piece.center.y + dy));
+        if (!kick)
+            return;
+        this.piece.tiles = rotated;
+        this.piece.center.x += kick[0];
+        this.piece.center.y += kick[1];
+    }
+
+    private fits(tiles: Array<Coordinates>, centerX: number, centerY: number): boolean {
+        const [width, height] = this.boardSize;
+        return tiles.every(tile => {
+            const x = tile.x + centerX;
+            const y = tile.y + centerY;
+            return x >= 0 && x < width && y >= 0 && y < height && this.board[x + y * width] === Color.Empty;
+        });
     }
 
     private managePieceDown() {
@@ -199,7 +215,7 @@ class Player {
         for (let i: number = row * 10; i < row * 10 + 10; i++) {
             this.board[i] = Color.Empty;
         }
-        for (let i: number = row * 10 - 1; i > 0; i--) {
+        for (let i: number = row * 10 - 1; i >= 0; i--) {
             let color = this.board[i]
             if (color && color != Color.Empty) {
                 this.board[i + 10] = color;
@@ -225,9 +241,6 @@ class Player {
                 case Direction.Down:
                     tileAbsolute.y += 1;
                     break;
-                case Direction.Rotate:
-                    tileAbsolute.rotate(-90, new Coordinates(this.piece.center.x, this.piece.center.y));
-                    break;
             }
 
             
@@ -248,7 +261,6 @@ const Direction = {
     Down: "Down",
     Left: "Left",
     Right: "Right",
-    Rotate: "Rotate",
 }
 
 export default Player
