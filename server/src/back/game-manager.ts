@@ -85,13 +85,14 @@ class GameManager {
         }
     }
 
-    // Each player gets their own board and piece, and only the spectrum of their opponents.
+    // Each player gets their own board, piece and next piece, and only the spectrum of their opponents.
     private sendGameStatus(status: GameStatus) {
         status.players.forEach(([socketId, player]) => {
             const playerStatus: PlayerStatus = {
                 time: status.time,
                 board: player.board,
                 piece: player.piece,
+                nextPiece: player.nextPiece ?? null,
                 lost: player.lost,
                 opponents: status.players
                     .filter(([id]) => id !== socketId)
@@ -111,6 +112,7 @@ type PlayerStatus = {
     time: number,
     board: Array<Array<number>>,
     piece: Piece,
+    nextPiece: string | null,
     lost: boolean,
     opponents: Array<{ name: string, spectrum: Array<number>, alive: boolean }>,
 }

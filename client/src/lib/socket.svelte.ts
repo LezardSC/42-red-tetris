@@ -15,11 +15,12 @@ export type OpponentStatus = {
     alive: boolean;
 };
 
-// `gamestatus`: the player's own board and piece, and only the spectrum of each opponent.
+// `gamestatus`: the player's own board, piece and next piece, and only the spectrum of each opponent.
 export type GameStatus = {
     time: number;
     board: Rgb[];
     piece: ServerPiece;
+    nextPiece: string | null;
     lost: boolean;
     opponents: OpponentStatus[];
 };

@@ -109,6 +109,7 @@ describe("GameManager", () => {
                 time: 42,
                 board: player1.board,
                 piece: player1.piece,
+                nextPiece: game.pieceManager.nextPieces[1],
                 lost: false,
                 opponents: [{ name: "Bob", spectrum: Array(10).fill(3), alive: false }],
             });
@@ -116,6 +117,7 @@ describe("GameManager", () => {
                 time: 42,
                 board: player2.board,
                 piece: player2.piece,
+                nextPiece: game.pieceManager.nextPieces[1],
                 lost: true,
                 opponents: [{ name: "Alice", spectrum: Array(10).fill(0), alive: true }],
             });
