@@ -357,6 +357,21 @@ describe("Player", () => {
         });
     });
 
+    describe("row clearing", () => {
+        it("should shift the top-left cell down when a row is cleared", () => {
+            const player = createPlayer();
+
+            player.board[0] = Color.O;
+            for (let x = 0; x < 10; x++)
+                player.board[5 * 10 + x] = Color.O;
+
+            player.checkCompletedRows();
+
+            expect(player.board[0]).toBe(Color.Empty);
+            expect(player.board[10]).toBe(Color.O);
+        });
+    });
+
     describe("responsive controls", () => {
         const tilesOf = (player: Player) =>
             // "+ 0" turns the -0 produced by rotations into 0.
@@ -493,6 +508,48 @@ describe("Player", () => {
             player.keyPressed(" ", 1000);
 
             expect(player.board.slice(190).every(color => color === Color.Empty)).toBe(true);
+        });
+
+        it("should kick off the left wall when rotating against it", () => {
+            const player = createPlayer("Player", "player-1", PieceType.T);
+
+            player.piece.center.y = 5;
+            player.keyPressed("ArrowUp", 1000);
+            player.keyReleased("ArrowUp");
+            player.piece.center.x = 0;
+            player.keyPressed("ArrowUp", 1100);
+
+            expect(player.piece.center.x).toBe(1);
+            expect(tilesOf(player)).toEqual([[1, 0], [0, 0], [-1, 0], [0, 1]]);
+        });
+
+        it("should kick up when rotating against the floor", () => {
+            const player = createPlayer("Player", "player-1", PieceType.T);
+
+            player.piece.center.y = 19;
+            player.keyPressed("ArrowUp", 1000);
+
+            expect(player.piece.center.y).toBe(18);
+            expect(player.piece.center.x).toBe(4);
+        });
+
+        it("should not rotate when no kick fits", () => {
+            const player = createPlayer("Player", "player-1", PieceType.T);
+
+            player.piece.center.y = 5;
+            player.keyPressed("ArrowUp", 1000);
+            player.keyReleased("ArrowUp");
+            player.piece.center.x = 0;
+            for (let y = 3; y <= 8; y++) {
+                player.board[y * 10 + 1] = Color.O;
+                player.board[y * 10 + 2] = Color.O;
+            }
+            const tilesBefore = tilesOf(player);
+            player.keyPressed("ArrowUp", 1100);
+
+            expect(player.piece.center.x).toBe(0);
+            expect(player.piece.center.y).toBe(5);
+            expect(tilesOf(player)).toEqual(tilesBefore);
         });
 
         it("should ignore keys once the player lost", () => {
